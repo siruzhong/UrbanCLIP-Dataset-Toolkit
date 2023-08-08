@@ -4,6 +4,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
+from loguru import logger
 
 # 定义三种主要坐标系
 # WGS84：GPS全球卫星定位系统使用的坐标系。
@@ -27,7 +28,7 @@ def bd_latlng2xy(zoom, latitude, longitude):
     }
     response = requests.get(url=url, params=params)
     result = response.json()
-    print('result:', result)
+    logger.info(f'result: {result}')
     loc = result["result"][0]
     res = 2 ** (18 - zoom)  # 计算缩放比例
     x = loc['x'] / res
@@ -52,14 +53,14 @@ def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, l
     stop_y = int(stop_y // 256)
 
     if start_x >= stop_x or start_y >= stop_y:
-        print("Invalid coordinates range")
+        logger.info("Invalid coordinates range")
         return
 
-    print("x range", start_x, stop_x)
-    print("y range", start_y, stop_y)
+    logger.info(f'x range: {start_x} to {stop_x}')
+    logger.info(f'y range: {start_y} to {stop_y}')
 
-    # 循环下载每个切片，使用自定义大小的线程池，例如设置max_workers=100
-    with ThreadPoolExecutor(max_workers=100) as executor:
+    # 循环下载每个切片，使用自定义大小的线程池，例如设置max_workers=666
+    with ThreadPoolExecutor(max_workers=10) as executor:
         futures = []
         for x in range(start_x, stop_x):
             for y in range(start_y, stop_y):
@@ -81,7 +82,7 @@ def download_tile(x, y, zoom, satellite, root_save):
         filename = f"{zoom}_{x}_{y}_r.png"
 
     filename = os.path.join(root_save, filename)
-    print('filename', filename)
+    logger.info(f'downloading filename: {filename}')
 
     # 检查文件是否存在，如不存在则下载
     if not os.path.exists(filename):
@@ -89,12 +90,14 @@ def download_tile(x, y, zoom, satellite, root_save):
             headers = {'User-Agent': 'Mozilla/5.0'}
             response = requests.get(url, headers=headers)
             response.raise_for_status()
-            print("-- saving", filename)
+            logger.info(f"-- saving {filename}")
             with open(filename, 'wb') as f:
                 f.write(response.content)
             time.sleep(random.random())  # 随机休眠减轻服务器负担
         except requests.RequestException as e:
-            print("--", filename, "->", e)
+            logger.info(f"-- {filename} -> {e}")
+    else:
+        logger.info(f"File already exists: {filename}")
 
 
 def main():
@@ -112,7 +115,7 @@ def main():
 
     # 遍历城市并下载相应的卫星图
     for city, coordinates in cities.items():
-        print(f"Downloading tiles for {city}...")
+        logger.info(f"Downloading tiles for {city}...")
         lat_start, lat_stop, lon_start, lon_stop = coordinates
         download_tiles(city, zoom, lat_start, lat_stop, lon_start, lon_stop, satellite)
 
