@@ -60,7 +60,7 @@ def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, l
     logger.info(f'y range: {start_y} to {stop_y}')
 
     # 循环下载每个切片，使用自定义大小的线程池，例如设置max_workers=666
-    with ThreadPoolExecutor(max_workers=10) as executor:
+    with ThreadPoolExecutor(max_workers=666) as executor:
         futures = []
         for x in range(start_x, stop_x):
             for y in range(start_y, stop_y):
