@@ -1,7 +1,7 @@
 import os
 import random
-import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 import requests
 
@@ -11,6 +11,7 @@ import requests
 # BD09：百度地图所使用的坐标体系。
 
 # 百度地图的访问密钥
+# 配置可见:https://lbsyun.baidu.com/apiconsole/center#/home
 ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
 
 
@@ -57,36 +58,43 @@ def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, l
     print("x range", start_x, stop_x)
     print("y range", start_y, stop_y)
 
-    # 循环下载每个切片
-    for x in range(start_x, stop_x):
-        for y in range(start_y, stop_y):
-            if satellite:
-                # 卫星图像URL
-                url = f"http://shangetu0.map.bdimg.com/it/u=x={x};y={y};z={zoom};v=009;type=sate&fm=46&udt=20150504&app=webearth2&v=009&udt=20150601"
-                filename = f"{zoom}_{x}_{y}_s.jpg"
-            else:
-                # 道路图像URL
-                url = f'http://online3.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z={zoom}&styles=pl&scaler=1&udt=20180810'
-                filename = f"{zoom}_{x}_{y}_r.png"
+    # 循环下载每个切片，使用自定义大小的线程池，例如设置max_workers=10
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = []
+        for x in range(start_x, stop_x):
+            for y in range(start_y, stop_y):
+                futures.append(executor.submit(download_tile, x, y, zoom, satellite, root_save))
+        # 等待所有线程完成
+        for future in futures:
+            future.result()
 
-            filename = os.path.join(root_save, filename)
-            print('filename', filename)
 
-            # 检查文件是否存在，如不存在则下载
-            if not os.path.exists(filename):
-                try:
-                    headers = {'User-Agent': 'Mozilla/5.0'}
-                    response = requests.get(url, headers=headers)
-                    response.raise_for_status()
-                    print("-- saving", filename)
-                    with open(filename, 'wb') as f:
-                        f.write(response.content)
+# 下载单个地图切片
+def download_tile(x, y, zoom, satellite, root_save):
+    if satellite:
+        # 卫星图像URL
+        url = f"http://shangetu0.map.bdimg.com/it/u=x={x};y={y};z={zoom};v=009;type=sate&fm=46&udt=20150504&app=webearth2&v=009&udt=20150601"
+        filename = f"{zoom}_{x}_{y}_s.jpg"
+    else:
+        # 道路图像URL
+        url = f'http://online3.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z={zoom}&styles=pl&scaler=1&udt=20180810'
+        filename = f"{zoom}_{x}_{y}_r.png"
 
-                    # 休眠以减轻服务器负担
-                    time.sleep(1 + random.random())
-                except requests.RequestException as e:
-                    print("--", filename, "->", e)
-                    sys.exit(1)
+    filename = os.path.join(root_save, filename)
+    print('filename', filename)
+
+    # 检查文件是否存在，如不存在则下载
+    if not os.path.exists(filename):
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
+            print("-- saving", filename)
+            with open(filename, 'wb') as f:
+                f.write(response.content)
+            time.sleep(random.random())  # 随机休眠减轻服务器负担
+        except requests.RequestException as e:
+            print("--", filename, "->", e)
 
 
 def main():
