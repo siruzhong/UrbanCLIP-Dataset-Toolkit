@@ -82,11 +82,11 @@ def download_tile(x, y, zoom, satellite, root_save):
         filename = f"{zoom}_{x}_{y}_r.png"
 
     filename = os.path.join(root_save, filename)
-    logger.info(f'downloading filename: {filename}')
 
     # 检查文件是否存在，如不存在则下载
     if not os.path.exists(filename):
         try:
+            logger.info(f'downloading filename: {filename}')
             headers = {'User-Agent': 'Mozilla/5.0'}
             response = requests.get(url, headers=headers)
             response.raise_for_status()
