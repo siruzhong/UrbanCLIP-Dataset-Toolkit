@@ -3,7 +3,6 @@ import base64
 import glob
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor
 
 import websockets
 from loguru import logger
@@ -53,14 +52,12 @@ async def process_image(image_path):
 
         # Splitting the description into sentences
         sentences = description.split('. ')
-        logger.info(f"Processed image: {image_path} - Sentences: {sentences}")
+        logger.info(f"Processed image: {image_path}")
         return sentences
 
 
 def handle_image(image_path):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    return loop.run_until_complete(process_image(image_path))
+    return asyncio.run(process_image(image_path))
 
 
 def main():
@@ -72,28 +69,27 @@ def main():
     base_directory = 'tiles'
     cities = ['Beijing', 'Guangzhou', 'Shanghai', 'Shenzhen']
 
-    with ThreadPoolExecutor(max_workers=100) as executor:
-        for city in cities:
-            directory_path = os.path.join(base_directory, city)
-            logger.info(f"Processing directory: {directory_path}")
+    for city in cities:
+        directory_path = os.path.join(base_directory, city)
+        logger.info(f"Processing directory: {directory_path}")
 
-            # Finding all image files in the directory
-            pattern = os.path.join(directory_path, '*.jpg')
-            image_paths = glob.glob(pattern)
+        # Finding all image files in the directory
+        pattern = os.path.join(directory_path, '*.jpg')
+        image_paths = glob.glob(pattern)
 
-            # Processing images concurrently
-            for image_path in image_paths:
-                image_name = os.path.basename(image_path)
-                description_sentences = executor.submit(handle_image, image_path).result()
+        # Processing images concurrently
+        for image_path in image_paths:
+            image_name = os.path.basename(image_path)
+            description_sentences = handle_image(image_path)
 
-                # Grouping the JSON for the same image together
-                image_results = []
-                for sentence in description_sentences:
-                    if sentence:  # Avoid empty strings
-                        result = {"caption": sentence.strip(), "image": os.path.join(city, image_name)}
-                        image_results.append(result)
+            # Grouping the JSON for the same image together
+            image_results = []
+            for sentence in description_sentences:
+                if sentence:  # Avoid empty strings
+                    result = {"caption": sentence.strip(), "image": os.path.join(city, image_name)}
+                    image_results.append(result)
 
-                results.extend(image_results)
+            results.extend(image_results)
 
     # Saving the results as a JSON file
     with open('captions.json', 'w') as file:
