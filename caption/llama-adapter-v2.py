@@ -3,6 +3,7 @@ import base64
 import glob
 import json
 import os
+import uuid
 
 import websockets
 from loguru import logger
@@ -20,47 +21,50 @@ def get_image_base64(image_path):
         return "data:image/jpeg;base64," + encoded_image
 
 
-async def process_image(image_path):
+async def process_image(semaphore, image_path):
     """
     Processes a single image and returns the description split into sentences.
 
+    :param semaphore: Limit the number of tasks running simultaneously
     :param image_path: Path to the image file.
     :return: List of description sentences.
     """
-    uri = 'ws://llama-adapter.opengvlab.com/queue/join'
-    async with websockets.connect(uri) as websocket:
-        # Sending first message to the server
-        msg1 = {"fn_index": 1, "session_hash": "4k1lrzequpu"}
-        await websocket.send(json.dumps(msg1))
-        await websocket.recv()
-        await websocket.recv()
+    async with semaphore:
+        session_hash = uuid.uuid4().hex
+        uri = 'ws://llama-adapter.opengvlab.com/queue/join'
+        async with websockets.connect(uri) as websocket:
+            # Sending first message to the server
+            msg1 = {"fn_index": 1, "session_hash": session_hash}
+            await websocket.send(json.dumps(msg1))
+            while True:
+                response = json.loads(await websocket.recv())
+                if response["msg"] == "estimation":
+                    logger.info(f"First responses: {session_hash}, {response}")
+                    break
 
-        # Sending second message containing the image
-        image_base64 = get_image_base64(image_path)
-        msg2 = {
-            "fn_index": 1,
-            "data": [image_base64, "", 128, 0.1, 0.75],
-            "event_data": None,
-            "session_hash": "4k1lrzequpu"
-        }
-        await websocket.send(json.dumps(msg2))
-        await websocket.recv()
-        await websocket.recv()
-        response = await websocket.recv()
-        response_json = json.loads(response)
-        description = response_json["output"]["data"][0]
+            # Sending second message containing the image
+            image_base64 = get_image_base64(image_path)
+            msg2 = {
+                "fn_index": 1,
+                "data": [image_base64, "", 128, 0.1, 0.75],
+                "event_data": None,
+                "session_hash": session_hash
+            }
+            await websocket.send(json.dumps(msg2))
+            while True:
+                response = json.loads(await websocket.recv())
+                if response["msg"] == "process_completed":
+                    logger.info(f"Second responses: {session_hash}, {response}")
+                    break
 
-        # Splitting the description into sentences
-        sentences = description.split('. ')
-        logger.info(f"Processed image: {image_path}")
-        return sentences
-
-
-def handle_image(image_path):
-    return asyncio.run(process_image(image_path))
+            # Splitting the description into sentences
+            description = response["output"]["data"][0]
+            sentences = description.split('. ')
+            logger.info(f"Processed image: {image_path}")
+            return sentences
 
 
-def main():
+async def main():
     """
     Main function to process all images in the specified directories and save
     the captions as JSON objects.
@@ -68,6 +72,7 @@ def main():
     results = []
     base_directory = 'tiles'
     cities = ['Beijing', 'Guangzhou', 'Shanghai', 'Shenzhen']
+    semaphore = asyncio.Semaphore(10000)
 
     for city in cities:
         directory_path = os.path.join(base_directory, city)
@@ -77,10 +82,12 @@ def main():
         pattern = os.path.join(directory_path, '*.jpg')
         image_paths = glob.glob(pattern)
 
-        # Processing images concurrently
-        for image_path in image_paths:
+        # Processing images concurrently using asyncio.gather
+        tasks = [process_image(semaphore, image_path) for image_path in image_paths]
+        descriptions = await asyncio.gather(*tasks)
+
+        for image_path, description_sentences in zip(image_paths, descriptions):
             image_name = os.path.basename(image_path)
-            description_sentences = handle_image(image_path)
 
             # Grouping the JSON for the same image together
             image_results = []
@@ -99,4 +106,4 @@ def main():
 
 # Running the main function
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
