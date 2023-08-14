@@ -29,39 +29,48 @@ async def process_image(semaphore, image_path):
     :param image_path: Path to the image file.
     :return: List of description sentences.
     """
-    async with semaphore:
-        session_hash = uuid.uuid4().hex
-        uri = 'ws://llama-adapter.opengvlab.com/queue/join'
-        async with websockets.connect(uri) as websocket:
-            # Sending first message to the server
-            msg1 = {"fn_index": 1, "session_hash": session_hash}
-            await websocket.send(json.dumps(msg1))
-            while True:
-                response = json.loads(await websocket.recv())
-                if response["msg"] == "estimation":
-                    logger.info(f"First responses: {session_hash}, {response}")
-                    break
+    MAX_RETRIES = 3
+    for attempt in range(MAX_RETRIES):
+        try:
+            async with semaphore:
+                session_hash = uuid.uuid4().hex
+                uri = 'ws://llama-adapter.opengvlab.com/queue/join'
+                async with websockets.connect(uri) as websocket:
+                    # Sending first message to the server
+                    msg1 = {"fn_index": 1, "session_hash": session_hash}
+                    await websocket.send(json.dumps(msg1))
+                    while True:
+                        response = json.loads(await websocket.recv())
+                        if response["msg"] == "estimation":
+                            logger.info(f"First responses: {session_hash}, {response}")
+                            break
 
-            # Sending second message containing the image
-            image_base64 = get_image_base64(image_path)
-            msg2 = {
-                "fn_index": 1,
-                "data": [image_base64, "", 128, 0.1, 0.75],
-                "event_data": None,
-                "session_hash": session_hash
-            }
-            await websocket.send(json.dumps(msg2))
-            while True:
-                response = json.loads(await websocket.recv())
-                if response["msg"] == "process_completed":
-                    logger.info(f"Second responses: {session_hash}, {response}")
-                    break
+                    # Sending second message containing the image
+                    image_base64 = get_image_base64(image_path)
+                    msg2 = {
+                        "fn_index": 1,
+                        "data": [image_base64, "", 128, 0.1, 0.75],
+                        "event_data": None,
+                        "session_hash": session_hash
+                    }
+                    await websocket.send(json.dumps(msg2))
+                    while True:
+                        response = json.loads(await websocket.recv())
+                        if response["msg"] == "process_completed":
+                            logger.info(f"Second responses: {session_hash}, {response}")
+                            break
 
-            # Splitting the description into sentences
-            description = response["output"]["data"][0]
-            sentences = description.split('. ')
-            logger.info(f"Processed image: {image_path}")
-            return sentences
+                    # Splitting the description into sentences
+                    description = response["output"]["data"][0]
+                    sentences = description.split('. ')
+                    logger.info(f"Processed image: {image_path}")
+                    return sentences
+        except websockets.ConnectionClosedError:
+            logger.warning(f"Connection reset on attempt {attempt + 1}, retrying...")
+            await asyncio.sleep(1)  # wait a second and try again
+
+    logger.error(f"Failed to process image after {MAX_RETRIES} attempts: {image_path}")
+    return []
 
 
 BATCH_SIZE = 100
