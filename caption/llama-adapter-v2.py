@@ -4,6 +4,7 @@ import glob
 import json
 import os
 import uuid
+import random
 
 import websockets
 from loguru import logger
@@ -65,9 +66,10 @@ async def process_image(semaphore, image_path):
                     sentences = description.split('. ')
                     logger.info(f"Processed image: {image_path}")
                     return sentences
-        except websockets.ConnectionClosedError:
-            logger.warning(f"Connection reset on attempt {attempt + 1}, retrying...")
-            await asyncio.sleep(1)  # wait a second and try again
+        except Exception as e:
+            wait_time = random.uniform(1, 3)  # Random wait time between 1 to 3 seconds
+            logger.warning(f"Exception on attempt {attempt + 1}: {str(e)}. Retrying...")
+            await asyncio.sleep(wait_time)  # wait a second and try again
 
     logger.error(f"Failed to process image after {MAX_RETRIES} attempts: {image_path}")
     return []
