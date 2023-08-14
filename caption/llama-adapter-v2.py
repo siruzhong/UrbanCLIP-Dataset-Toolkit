@@ -75,7 +75,7 @@ async def main():
 
     base_directory = '../tiles'
     cities = ['Beijing', 'Guangzhou', 'Shanghai', 'Shenzhen']
-    semaphore = asyncio.Semaphore(200)
+    semaphore = asyncio.Semaphore(100)
 
     for city in cities:
         city_results = []
