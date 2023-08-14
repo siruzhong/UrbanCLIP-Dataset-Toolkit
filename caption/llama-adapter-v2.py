@@ -73,9 +73,9 @@ async def main():
     output_directory = 'pairs'
     os.makedirs(output_directory, exist_ok=True)
 
-    base_directory = 'tiles'
+    base_directory = '../tiles'
     cities = ['Beijing', 'Guangzhou', 'Shanghai', 'Shenzhen']
-    semaphore = asyncio.Semaphore(10000)
+    semaphore = asyncio.Semaphore(200)
 
     for city in cities:
         city_results = []
