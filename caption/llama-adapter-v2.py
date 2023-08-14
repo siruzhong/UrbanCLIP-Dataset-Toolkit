@@ -69,12 +69,16 @@ async def main():
     Main function to process all images in the specified directories and save
     the captions as JSON objects.
     """
-    results = []
+    # Create 'pairs' directory if it does not exist
+    output_directory = 'pairs'
+    os.makedirs(output_directory, exist_ok=True)
+
     base_directory = 'tiles'
     cities = ['Beijing', 'Guangzhou', 'Shanghai', 'Shenzhen']
     semaphore = asyncio.Semaphore(10000)
 
     for city in cities:
+        city_results = []
         directory_path = os.path.join(base_directory, city)
         logger.info(f"Processing directory: {directory_path}")
 
@@ -96,12 +100,13 @@ async def main():
                     result = {"caption": sentence.strip(), "image": os.path.join(city, image_name)}
                     image_results.append(result)
 
-            results.extend(image_results)
+            city_results.extend(image_results)
 
-    # Saving the results as a JSON file
-    with open('captions.json', 'w') as file:
-        json.dump(results, file)
-    logger.info(f"Saved {len(results)} results to captions.json")
+        # Saving the results as a JSON file
+        city_json_filename = os.path.join(output_directory, f"{city}_captions.json")
+        with open(city_json_filename, 'w') as file:
+            json.dump(city_results, file)
+        logger.info(f"Saved {len(city_results)} results to {city_json_filename}")
 
 
 # Running the main function
