@@ -64,6 +64,9 @@ async def process_image(semaphore, image_path):
             return sentences
 
 
+BATCH_SIZE = 100
+
+
 async def main():
     """
     Main function to process all images in the specified directories and save
@@ -78,7 +81,6 @@ async def main():
     semaphore = asyncio.Semaphore(100)
 
     for city in cities:
-        city_results = []
         directory_path = os.path.join(base_directory, city)
         logger.info(f"Processing directory: {directory_path}")
 
@@ -86,27 +88,37 @@ async def main():
         pattern = os.path.join(directory_path, '*.jpg')
         image_paths = glob.glob(pattern)
 
-        # Processing images concurrently using asyncio.gather
-        tasks = [process_image(semaphore, image_path) for image_path in image_paths]
-        descriptions = await asyncio.gather(*tasks)
-
-        for image_path, description_sentences in zip(image_paths, descriptions):
-            image_name = os.path.basename(image_path)
-
-            # Grouping the JSON for the same image together
-            image_results = []
-            for sentence in description_sentences:
-                if sentence:  # Avoid empty strings
-                    result = {"caption": sentence.strip(), "image": os.path.join(city, image_name)}
-                    image_results.append(result)
-
-            city_results.extend(image_results)
-
-        # Saving the results as a JSON file
+        # Create city JSON file
         city_json_filename = os.path.join(output_directory, f"{city}_captions.json")
         with open(city_json_filename, 'w') as file:
-            json.dump(city_results, file)
-        logger.info(f"Saved {len(city_results)} results to {city_json_filename}")
+            file.write('[')
+
+        total_results = 0
+        for i in range(0, len(image_paths), BATCH_SIZE):
+            batch_paths = image_paths[i:i + BATCH_SIZE]
+            tasks = [process_image(semaphore, image_path) for image_path in batch_paths]
+            descriptions = await asyncio.gather(*tasks)
+
+            batch_results = []
+            for image_path, description_sentences in zip(batch_paths, descriptions):
+                image_name = os.path.basename(image_path)
+                image_results = [{"caption": sentence.strip(), "image":
+                    os.path.join(city, image_name)} for sentence in description_sentences if sentence]
+                batch_results.extend(image_results)
+
+            with open(city_json_filename, 'a') as file:
+                if i != 0:
+                    file.write(',')
+                json.dump(batch_results, file, indent=2)
+                if i + BATCH_SIZE < len(image_paths):
+                    file.write(',')
+
+            total_results += len(batch_results)
+            logger.info(f"Saved batch {i // BATCH_SIZE + 1} to {city_json_filename}")
+
+        with open(city_json_filename, 'a') as file:
+            file.write(']')
+        logger.info(f"Saved {total_results} results to {city_json_filename}")
 
 
 # Running the main function

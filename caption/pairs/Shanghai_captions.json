@@ -1,22 +1,18 @@
-[
+[[
   {
-    "caption": "The image shows a highway with a red car driving down the road",
+    "caption": "The image shows a view of a highway from above, with a car driving on the road",
     "image": "Shanghai/19_105321_28184_s.jpg"
   },
   {
-    "caption": "The car is positioned in the middle of the road, and it appears to be moving at a moderate speed",
+    "caption": "The car is positioned in the middle of the road, and there are several other cars visible in the scene, some of which are closer to the camera and others further away",
     "image": "Shanghai/19_105321_28184_s.jpg"
   },
   {
-    "caption": "The highway is surrounded by a lush green field, providing a scenic view for the driver",
+    "caption": "The highway is surrounded by a lush green field, creating a scenic view",
     "image": "Shanghai/19_105321_28184_s.jpg"
   },
   {
-    "caption": "There are also several other cars visible in the image, some of which are further down the road, and others are closer to the red car",
-    "image": "Shanghai/19_105321_28184_s.jpg"
-  },
-  {
-    "caption": "The presence of these other cars suggests that the highway is a busy road, with various vehicles traveling along it.",
+    "caption": "The image also features a bridge in the background, which adds to the overall landscape of the highway.",
     "image": "Shanghai/19_105321_28184_s.jpg"
   },
   {
@@ -32,19 +28,19 @@
     "image": "Shanghai/19_105321_28187_s.jpg"
   },
   {
-    "caption": "The image is a bird's eye view of a city, showcasing a large body of water surrounded by numerous buildings",
+    "caption": "The image is a bird's eye view of a city, showcasing a large body of water surrounded by buildings",
     "image": "Shanghai/19_105321_28359_s.jpg"
   },
   {
-    "caption": "The water appears to be a river, and the city is filled with various structures, including apartment buildings and a bridge",
+    "caption": "The water is filled with numerous boats of various sizes, creating a lively atmosphere",
     "image": "Shanghai/19_105321_28359_s.jpg"
   },
   {
-    "caption": "The scene is captured from a high vantage point, providing a comprehensive view of the city's layout",
+    "caption": "The city is densely populated, with numerous buildings and streets visible throughout the scene",
     "image": "Shanghai/19_105321_28359_s.jpg"
   },
   {
-    "caption": "The image also features a few cars and trucks scattered throughout the city, indicating that it is a bustling urban environment.",
+    "caption": "The aerial view provides a comprehensive view of the city's layout and the waterfront area, highlighting the interconnectedness of the urban environment and the water resources.",
     "image": "Shanghai/19_105321_28359_s.jpg"
   }
-]
+]]
