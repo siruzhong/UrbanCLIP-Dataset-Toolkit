@@ -3,8 +3,8 @@ import base64
 import glob
 import json
 import os
-import uuid
 import random
+import uuid
 
 import websockets
 from loguru import logger
@@ -67,7 +67,7 @@ async def process_image(semaphore, image_path):
                     logger.info(f"Processed image: {image_path}")
                     return sentences
         except Exception as e:
-            wait_time = random.uniform(1, 3)  # Random wait time between 1 to 3 seconds
+            wait_time = random.uniform(1, 3)  # Random wait time between 1 and 3 seconds
             logger.warning(f"Exception on attempt {attempt + 1}: {str(e)}. Retrying...")
             await asyncio.sleep(wait_time)  # wait a second and try again
 
@@ -99,37 +99,48 @@ async def main():
         pattern = os.path.join(directory_path, '*.jpg')
         image_paths = glob.glob(pattern)
 
-        # Create city JSON file
+        # Load existing data if the file exists
         city_json_filename = os.path.join(output_directory, f"{city}_captions.json")
-        with open(city_json_filename, 'w') as file:
-            file.write('[')
+        existing_data = []
+        if os.path.exists(city_json_filename):
+            with open(city_json_filename, 'r') as file:
+                existing_data = json.load(file)
 
-        total_results = 0
-        for i in range(0, len(image_paths), BATCH_SIZE):
-            batch_paths = image_paths[i:i + BATCH_SIZE]
+        # Convert existing data into a set for easy lookup
+        existing_images = set(item["image"] for sublist in existing_data for item in sublist)
+
+        new_image_paths = []
+        for image_path in image_paths:
+            base_name = '/'.join(image_path.split('/')[-2:])
+            if base_name not in existing_images:
+                new_image_paths.append(image_path)
+
+        if not new_image_paths:
+            logger.info(f"All images for {city} have already been processed.")
+            continue
+
+        # Process new images and generate new data
+        new_data = []
+        for i in range(0, len(new_image_paths), BATCH_SIZE):
+            batch_paths = new_image_paths[i:i + BATCH_SIZE]
             tasks = [process_image(semaphore, image_path) for image_path in batch_paths]
             descriptions = await asyncio.gather(*tasks)
 
             batch_results = []
             for image_path, description_sentences in zip(batch_paths, descriptions):
                 image_name = os.path.basename(image_path)
-                image_results = [{"caption": sentence.strip(), "image":
-                    os.path.join(city, image_name)} for sentence in description_sentences if sentence]
+                image_results = [{"caption": sentence.strip(), "image": os.path.join(city, image_name)} for sentence in
+                                 description_sentences if sentence]
                 batch_results.extend(image_results)
 
-            with open(city_json_filename, 'a') as file:
-                if i != 0:
-                    file.write(',')
-                json.dump(batch_results, file, indent=2)
-                if i + BATCH_SIZE < len(image_paths):
-                    file.write(',')
+            new_data.extend(batch_results)
+            logger.info(f"Processed batch {i // BATCH_SIZE + 1} for {city}")
 
-            total_results += len(batch_results)
-            logger.info(f"Saved batch {i // BATCH_SIZE + 1} to {city_json_filename}")
-
-        with open(city_json_filename, 'a') as file:
-            file.write(']')
-        logger.info(f"Saved {total_results} results to {city_json_filename}")
+        # Combine existing and new data, then write to the JSON file
+        combined_data = existing_data + new_data
+        with open(city_json_filename, 'w') as file:
+            json.dump(combined_data, file, indent=2)
+        logger.info(f"Saved {len(combined_data)} results to {city_json_filename}")
 
 
 # Running the main function
