@@ -75,7 +75,7 @@ async def process_image(semaphore, image_path):
     return []
 
 
-BATCH_SIZE = 100
+BATCH_SIZE = 1000
 
 
 async def main():
