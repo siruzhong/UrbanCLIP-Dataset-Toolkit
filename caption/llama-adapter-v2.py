@@ -75,7 +75,7 @@ async def process_image(semaphore, image_path):
     return []
 
 
-BATCH_SIZE = 1000
+BATCH_SIZE = 100
 
 
 async def main():
@@ -89,7 +89,7 @@ async def main():
 
     base_directory = '../tiles'
     cities = ['Beijing', 'Guangzhou', 'Shanghai', 'Shenzhen']
-    semaphore = asyncio.Semaphore(100)
+    semaphore = asyncio.Semaphore(2000)
 
     for city in cities:
         directory_path = os.path.join(base_directory, city)
