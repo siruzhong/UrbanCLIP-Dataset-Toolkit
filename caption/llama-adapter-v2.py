@@ -142,8 +142,11 @@ async def main():
         # Combine existing and new data, then write to the JSON file
         existing_data_flat.extend(new_data)
 
+        # Wrap the entire existing_data_flat list in an additional list
+        combined_data = [existing_data_flat]
+
         with open(city_json_filename, 'w') as file:
-            json.dump(existing_data_flat, file, indent=2)
+            json.dump(combined_data, file, indent=2)
         logger.info(f"Saved {len(new_data)} results to {city_json_filename}")
 
 
