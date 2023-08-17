@@ -136,11 +136,15 @@ async def main():
             new_data.extend(batch_results)
             logger.info(f"Processed batch {i // BATCH_SIZE + 1} for {city}")
 
+        # Flatten existing_data list if it's nested
+        existing_data_flat = [item for sublist in existing_data for item in sublist]
+
         # Combine existing and new data, then write to the JSON file
-        combined_data = existing_data + new_data
+        existing_data_flat.extend(new_data)
+
         with open(city_json_filename, 'w') as file:
-            json.dump(combined_data, file, indent=2)
-        logger.info(f"Saved {len(combined_data)} results to {city_json_filename}")
+            json.dump(existing_data_flat, file, indent=2)
+        logger.info(f"Saved {len(new_data)} results to {city_json_filename}")
 
 
 # Running the main function
