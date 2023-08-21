@@ -75,7 +75,7 @@ async def process_image(semaphore, image_path):
     return []
 
 
-BATCH_SIZE = 100
+BATCH_SIZE = 5
 
 
 async def main():
@@ -89,7 +89,7 @@ async def main():
 
     base_directory = '../tiles'
     cities = ['Beijing', 'Guangzhou', 'Shanghai', 'Shenzhen']
-    semaphore = asyncio.Semaphore(2000)
+    semaphore = asyncio.Semaphore(1000)
 
     for city in cities:
         directory_path = os.path.join(base_directory, city)
@@ -136,18 +136,18 @@ async def main():
             new_data.extend(batch_results)
             logger.info(f"Processed batch {i // BATCH_SIZE + 1} for {city}")
 
-        # Flatten existing_data list if it's nested
-        existing_data_flat = [item for sublist in existing_data for item in sublist]
+            # Flatten existing_data list if it's nested
+            existing_data_flat = [item for sublist in existing_data for item in sublist]
 
-        # Combine existing and new data, then write to the JSON file
-        existing_data_flat.extend(new_data)
+            # Combine existing and new data, then write to the JSON file
+            existing_data_flat.extend(new_data)
 
-        # Wrap the entire existing_data_flat list in an additional list
-        combined_data = [existing_data_flat]
+            # Wrap the entire existing_data_flat list in an additional list
+            combined_data = [existing_data_flat]
 
-        with open(city_json_filename, 'w') as file:
-            json.dump(combined_data, file, indent=2)
-        logger.info(f"Saved {len(new_data)} results to {city_json_filename}")
+            with open(city_json_filename, 'w') as file:
+                json.dump(combined_data, file, indent=2)
+            logger.info(f"Saved {len(new_data)} results to {city_json_filename}")
 
 
 # Running the main function
