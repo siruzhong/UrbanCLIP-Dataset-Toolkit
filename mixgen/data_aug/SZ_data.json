@@ -1,0 +1,17 @@
+[
+    {
+        "mixed_texts": "This is Figure 19_98928_20020_s.jpg This is Figure 19_99295_20202_s.jpg",
+        "mixed_images": "data_aug/Shenzhen/19_98928_20020_99295_20202_s.jpg",
+        "ids": "19_98928_20020_99295_20202_s"
+    },
+    {
+        "mixed_texts": "This is Figure 19_99090_19948_s.jpg This is Figure 19_99090_19947_s.jpg",
+        "mixed_images": "data_aug/Shenzhen/19_99090_19948_99090_19947_s.jpg",
+        "ids": "19_99090_19948_99090_19947_s"
+    },
+    {
+        "mixed_texts": "This is Figure 19_98930_20222_s.jpg This is Figure 19_99295_20210_s.jpg",
+        "mixed_images": "data_aug/Shenzhen/19_98930_20222_99295_20210_s.jpg",
+        "ids": "19_98930_20222_99295_20210_s"
+    }
+]

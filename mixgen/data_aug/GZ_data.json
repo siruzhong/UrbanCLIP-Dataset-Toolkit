@@ -1,0 +1,17 @@
+[
+    {
+        "mixed_texts": "This is Figure 19_98363_20377_s.jpg This is Figure 19_98363_20376_s.jpg",
+        "mixed_images": "data_aug/Guangzhou/19_98363_20377_98363_20376_s.jpg",
+        "ids": "19_98363_20377_98363_20376_s"
+    },
+    {
+        "mixed_texts": "This is Figure 19_98363_20383_s.jpg This is Figure 19_98364_20634_s.jpg",
+        "mixed_images": "data_aug/Guangzhou/19_98363_20383_98364_20634_s.jpg",
+        "ids": "19_98363_20383_98364_20634_s"
+    },
+    {
+        "mixed_texts": "This is Figure 19_98363_20374_s.jpg This is Figure 19_98363_20382_s.jpg",
+        "mixed_images": "data_aug/Guangzhou/19_98363_20374_98363_20382_s.jpg",
+        "ids": "19_98363_20374_98363_20382_s"
+    }
+]
