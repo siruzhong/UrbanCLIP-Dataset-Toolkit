@@ -87,6 +87,9 @@ def move_images_to_folder(images, source_folder, destination_folder):
             print(f"Warning: Image {source_image_path} not found!")
 
 
+img_base_dir = "../tiles-extended"
+img_filter_base_dir = img_base_dir + '/ocean'
+
 if __name__ == "__main__":
     # 指定多个JSON文件的路径
     json_file_path = ['./pairs-extended/Beijing_captions.json', './pairs-extended/Shanghai_captions.json',
@@ -97,13 +100,13 @@ if __name__ == "__main__":
         extracted_data, images_to_remove = find_and_extract_images_with_keyword(json_file, 'ocean')
 
         # 移动找到的图片到指定文件夹
-        move_images_to_folder(images_to_remove, '../tiles-extended', '../tiles-extended/ocean')
+        move_images_to_folder(images_to_remove, img_base_dir, img_filter_base_dir)
 
         # 从原始数据中删除找到的图片
         remove_images_from_data(json_file, images_to_remove)
 
         # 将提取的数据保存到新的JSON文件中
-        save_to_new_json(extracted_data, '../tiles-extended/ocean/ocean.json')
+        save_to_new_json(extracted_data, os.path.join(img_filter_base_dir, 'ocean.json'))
 
         # 打印已删除的图片列表
         print("Removed images:")
