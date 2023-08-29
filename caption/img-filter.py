@@ -89,18 +89,20 @@ def move_images_to_folder(images, source_folder, destination_folder):
 
 img_base_dir = "../tiles-extended"
 img_filter_base_dir = img_base_dir + '/ocean'
+json_dir = './pairs-extended'
+city_list = ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen']
 
 if __name__ == "__main__":
     # 指定多个JSON文件的路径
-    json_file_path = ['./pairs-extended/Beijing_captions.json', './pairs-extended/Shanghai_captions.json',
-                      './pairs-extended/Guangzhou_captions.json', './pairs-extended/Shenzhen_captions.json']
+    for city in city_list:
+        json_file = os.path.join(json_dir, city + "_captions.json")
 
-    for json_file in json_file_path:
         # 根据关键词找到图片
         extracted_data, images_to_remove = find_and_extract_images_with_keyword(json_file, 'ocean')
 
         # 移动找到的图片到指定文件夹
-        move_images_to_folder(images_to_remove, img_base_dir, img_filter_base_dir)
+        move_images_to_folder(images_to_remove, os.path.join(img_base_dir, city),
+                              os.path.join(img_filter_base_dir, city))
 
         # 从原始数据中删除找到的图片
         remove_images_from_data(json_file, images_to_remove)
