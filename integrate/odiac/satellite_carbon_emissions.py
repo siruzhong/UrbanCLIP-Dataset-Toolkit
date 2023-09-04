@@ -1,3 +1,4 @@
+import csv
 import os
 
 import rasterio
@@ -55,28 +56,50 @@ def extract_coordinates_from_filename(filename):
     return x, y
 
 
-def compute_emission_for_all_images(root_folder):
+def already_processed_images(csv_filename):
+    processed_images = set()
+    if os.path.exists(csv_filename):
+        with open(csv_filename, 'r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                processed_images.add(row['satellite_img_name'])
+    return processed_images
+
+
+def compute_emission_for_all_images(root_folder, csv_filename):
     """
     Computes the carbon emission for all images in the root folder.
     """
-    emissions = {}
+    processed_images = already_processed_images(csv_filename)
 
-    for city_folder in os.listdir(root_folder):
-        city_path = os.path.join(root_folder, city_folder)
-        # Ensure we're only iterating through directories
-        if not os.path.isdir(city_path):
-            continue
-        for image_file in os.listdir(city_path):
-            if image_file.endswith('.jpg'):
-                x, y = extract_coordinates_from_filename(image_file)
-                emission_value = get_point_carbon_emission(x, y)
-                print(f"Emission for {city_folder}/{image_file}: {emission_value}")
-                emissions[f"{city_folder}/{image_file}"] = emission_value
+    with open(csv_filename, 'w', newline='') as csvfile:
+        fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate', 'carbon_emissions']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
-    return emissions
+        # Write header only if the file is newly created
+        if not processed_images:
+            writer.writeheader()
+
+        for city_folder in os.listdir(root_folder):
+            city_path = os.path.join(root_folder, city_folder)
+            if not os.path.isdir(city_path):
+                continue
+            for image_file in os.listdir(city_path):
+                if image_file.endswith('.jpg') and f"{city_folder}/{image_file}" not in processed_images:
+                    x, y = extract_coordinates_from_filename(image_file)
+                    lat, lon = bd_xy2latlng(16, x, y)
+                    emission_value = get_point_carbon_emission(x, y)
+                    print(f"Emission for {city_folder}/{image_file}: {emission_value}")
+                    writer.writerow({
+                        'satellite_img_name': f"{city_folder}/{image_file}",
+                        'BD09 coordinate': f"({x * 256 * 2 ** (18 - 16)}, {y * 256 * 2 ** (18 - 16)})",
+                        'WGS84 coordinate': f"({lat}, {lon})",
+                        'carbon_emissions': emission_value
+                    })
 
 
 # Running the main function
 if __name__ == "__main__":
     root_folder = "../../tiles"
-    all_emissions = compute_emission_for_all_images(root_folder)
+    csv_filename = "emissions.csv"
+    compute_emission_for_all_images(root_folder, csv_filename)
