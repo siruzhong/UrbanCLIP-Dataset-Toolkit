@@ -154,6 +154,6 @@ def update_csv_with_changes(root_folder, csv_filename):
 
 # Running the main function
 if __name__ == "__main__":
-    root_folder = "../../tiles"
+    root_folder = "/Users/zhongsiru/project/src/satellite-image-crawl/tiles"
     csv_filename = "integrated_satellite_data.csv"
     update_csv_with_changes(root_folder, csv_filename)
