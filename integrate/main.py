@@ -10,6 +10,12 @@ ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
 # Path of the tif file to read
 carbon_emissions_tif_path = "/Users/zhongsiru/project/src/dataset/odiac/2021/odiac2022_1km_excl_intl_2112.tif"
 worldtop_population_tif_path = "/Users/zhongsiru/project/src/dataset/worldtop/chn_ppp_2020_1km_Aggregated.tif"
+# Zoom level of the map
+zoom = 19
+# Path of the folder to save the tiles
+root_folder = "/Users/zhongsiru/project/src/satellite-image-crawl/tiles"
+# Path of the csv file to save the integrated data
+csv_filename = "integrated_satellite_data.csv"
 
 
 def bd_xy2latlng(zoom, x, y):
@@ -38,7 +44,7 @@ def get_point_carbon_emission(x, y):
     Retrieve carbon emission value for a specific point using its x, y coordinates.
     """
     with rasterio.open(carbon_emissions_tif_path) as src:
-        lat, lon = bd_xy2latlng(19, x, y)
+        lat, lon = bd_xy2latlng(zoom, x, y)
         # Convert the lat, lon to row, col of the raster data
         row, col = src.index(lon, lat)
         # Read the raster data
@@ -52,7 +58,7 @@ def get_point_population(x, y):
     Retrieve worldtop population value for a specific point using its x, y coordinates.
     """
     with rasterio.open(worldtop_population_tif_path) as src:
-        lat, lon = bd_xy2latlng(19, x, y)
+        lat, lon = bd_xy2latlng(zoom, x, y)
         # Convert the lat, lon to row, col of the raster data
         row, col = src.index(lon, lat)
         # Read the raster data
@@ -102,7 +108,8 @@ def csv_file_exists(filename):
 def create_csv_file(filename):
     """Create a new CSV file with headers."""
     with open(filename, 'w', newline='') as csvfile:
-        fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate', 'carbon_emissions', 'population']
+        fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate', 'carbon_emissions (ton)',
+                      'population (unit)']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -122,7 +129,7 @@ def update_csv_with_changes(root_folder, csv_filename):
     for image_key in new_images:
         city_folder, image_file = image_key.split("/")
         x, y = extract_coordinates_from_filename(image_file)
-        lat, lon = bd_xy2latlng(16, x, y)
+        lat, lon = bd_xy2latlng(zoom, x, y)
         emission_value = get_point_carbon_emission(x, y)
         population = round(get_point_population(x, y))
         if population < 0:
@@ -133,8 +140,8 @@ def update_csv_with_changes(root_folder, csv_filename):
             'satellite_img_name': image_key,
             'BD09 coordinate': f"({x * 256 * 2 ** (18 - 16)}, {y * 256 * 2 ** (18 - 16)})",
             'WGS84 coordinate': f"({lat}, {lon})",
-            'carbon_emissions': emission_value,
-            'population': population,
+            'carbon_emissions (ton)': emission_value,
+            'population (unit)': population,
         })
 
     # Process CSV: Load, Remove old entries, Append new data, and Rewrite
@@ -145,7 +152,8 @@ def update_csv_with_changes(root_folder, csv_filename):
 
     # Append new data and rewrite CSV
     with open(csv_filename, 'w', newline='') as csvfile:
-        fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate', 'carbon_emissions', 'population']
+        fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate', 'carbon_emissions (ton)',
+                      'population (unit)']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(reader)  # Existing data
@@ -154,6 +162,4 @@ def update_csv_with_changes(root_folder, csv_filename):
 
 # Running the main function
 if __name__ == "__main__":
-    root_folder = "/Users/zhongsiru/project/src/satellite-image-crawl/tiles"
-    csv_filename = "integrated_satellite_data.csv"
     update_csv_with_changes(root_folder, csv_filename)
