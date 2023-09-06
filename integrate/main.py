@@ -5,118 +5,80 @@ import rasterio
 import requests
 from pyproj import Transformer
 
-# Baidu Map's access key
-# Configuration visible at: https://lbsyun.baidu.com/apiconsole/center#/home
+# Configuration parameters
 ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
-# Path of the tif file to read
 carbon_emissions_tif_path = "/Users/zhongsiru/project/src/dataset/odiac/2021/odiac2022_1km_excl_intl_2112.tif"
 worldtop_population_tif_path = "/Users/zhongsiru/project/src/dataset/worldtop/chn_ppp_2020_1km_Aggregated.tif"
 gpp_tif_path = "/Users/zhongsiru/project/src/dataset/gdp/2010/cngdp2010.tif"
-# Zoom level of the map
 zoom = 19
-# Path of the folder to save the tiles
 root_folder = "/Users/zhongsiru/project/src/satellite-image-crawl/tiles"
-# Path of the csv file to save the integrated data
 csv_filename = "integrated_satellite_data.csv"
 
 
 def bd_xy2latlng(zoom, x, y):
-    """
-    Convert BD09 pixel coordinates to WGS84 lat/lng for a given zoom level.
-    """
-    res = 2 ** (18 - zoom)  # Calculate the zoom scale
+    """Convert BD09 pixel coordinates to WGS84 lat/lng for a given zoom level."""
+    res = 2 ** (18 - zoom)
     bd_x = x * 256 * res
     bd_y = y * 256 * res
 
-    url = "https://api.map.baidu.com/geoconv/v1/"
     params = {
         "coords": f"{bd_x},{bd_y}",
-        "from": "6",  # This is BD09
-        "to": "5",  # This is WGS84
+        "from": "6",  # BD09
+        "to": "5",  # WGS84
         "ak": ak
     }
-    response = requests.get(url=url, params=params)
-    result = response.json()
-    loc = result["result"][0]
+    response = requests.get(url="https://api.map.baidu.com/geoconv/v1/", params=params)
+    response.raise_for_status()  # Raise an exception for HTTP errors
+    loc = response.json()["result"][0]
     return loc['y'], loc['x']  # latitude, longitude
 
 
-def get_point_carbon_emission(x, y):
-    """
-    Retrieve carbon emission value for a specific point using its x, y coordinates.
-    """
-    with rasterio.open(carbon_emissions_tif_path) as src:
+def read_raster_value_at_coordinate(tif_path, x, y):
+    """Retrieve raster value for a specific point using its x, y coordinates."""
+    with rasterio.open(tif_path) as src:
         lat, lon = bd_xy2latlng(zoom, x, y)
-        # Convert the lat, lon to row, col of the raster data
         row, col = src.index(lon, lat)
-        # Read the raster data
-        co2_data = src.read(1)
-        # Use the row and col to get the value from the raster data
-        return co2_data[row, col]
+        data = src.read(1)
+        return data[row, col]
+
+
+def get_point_carbon_emission(x, y):
+    """Retrieve carbon emission value for a specific point."""
+    return read_raster_value_at_coordinate(carbon_emissions_tif_path, x, y)
 
 
 def get_point_population(x, y):
-    """
-    Retrieve worldtop population value for a specific point using its x, y coordinates.
-    """
-    with rasterio.open(worldtop_population_tif_path) as src:
-        lat, lon = bd_xy2latlng(zoom, x, y)
-        # Convert the lat, lon to row, col of the raster data
-        row, col = src.index(lon, lat)
-        # Read the raster data
-        population_data = src.read(1)
-        # Use the row and col to get the value from the raster data
-        population = round(population_data[row, col])
-        if population < 0:
-            population = 0
-
-        return population
+    """Retrieve population value for a specific point."""
+    population = round(read_raster_value_at_coordinate(worldtop_population_tif_path, x, y))
+    return max(0, population)  # Ensure no negative values
 
 
 def get_point_gdp(x, y):
-    """
-    Retrieve GDP value for a specific point using its x, y coordinates from a worldtop population raster dataset.
-    """
+    """Retrieve GDP value for a specific point."""
     with rasterio.open(gpp_tif_path) as src:
-        # Convert x, y coordinates to latitude and longitude
         lat, lon = bd_xy2latlng(zoom, x, y)
-        # Create a transformer to convert from WGS 84 (EPSG:4326) to the raster's coordinate reference system
         transformer = Transformer.from_crs("EPSG:4326", src.crs, always_xy=True)
-        # Use the transformer to convert the latitude and longitude to the raster's coordinate system
-        x, y = transformer.transform(lon, lat)
-        # Convert the transformed coordinates to row and column indices in the raster dataset
-        row, col = src.index(x, y)
-        # Check if the row and column indices are within the bounds of the raster dataset
+        x_transformed, y_transformed = transformer.transform(lon, lat)
+        row, col = src.index(x_transformed, y_transformed)
         if 0 <= row < src.height and 0 <= col < src.width:
-            # If within bounds, retrieve the GDP value at the specified row and column
             gdp_value = src.read(1)[row, col]
-            if gdp_value < 0:
-                return 0
-        else:
-            # If outside bounds, return 0
-            return 0
-
-    return gdp_value
+            return max(0, gdp_value)  # Ensure no negative values
+        return 0
 
 
 def extract_coordinates_from_filename(filename):
-    """
-    Extracts x, y coordinates from the filename.
-    """
-    parts = filename.split('_')
-    x = int(parts[1])
-    y = int(parts[2])
-    return x, y
+    """Extracts x, y coordinates from the filename."""
+    _, x, y, _ = filename.split('_')
+    return int(x), int(y)
 
 
-def already_processed_images(csv_filename):
-    processed_images = set()
-    if os.path.exists(csv_filename):
-        with open(csv_filename, 'r') as csvfile:
-            reader = csv.DictReader(csvfile)
-            for row in reader:
-                processed_images.add(row['satellite_img_name'])
-    return processed_images
+def get_processed_images(csv_filename):
+    """Retrieve the list of already processed images."""
+    if not os.path.exists(csv_filename):
+        return set()
+    with open(csv_filename, 'r') as csvfile:
+        reader = csv.DictReader(csvfile)
+        return {row['satellite_img_name'] for row in reader}
 
 
 def get_all_images(root_folder):
@@ -132,30 +94,23 @@ def get_all_images(root_folder):
     return all_images
 
 
-def csv_file_exists(filename):
-    """Check if a CSV file exists."""
-    return os.path.exists(filename)
-
-
-def create_csv_file(filename):
-    """Create a new CSV file with headers."""
+def initialize_csv_file(filename):
+    """Initialize a new CSV file with headers if it doesn't exist."""
+    if os.path.exists(filename):
+        return
     with open(filename, 'w', newline='') as csvfile:
-        fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate', 'carbon_emissions (ton)',
-                      'population (unit)', 'gdp (million yuan)']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
+        fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate',
+                      'carbon_emissions (ton)', 'population (unit)', 'gdp (million yuan)']
+        csv.DictWriter(csvfile, fieldnames=fieldnames).writeheader()
 
 
 def update_csv_with_changes(root_folder, csv_filename):
-    if not csv_file_exists(csv_filename):
-        create_csv_file(csv_filename)
+    initialize_csv_file(csv_filename)
 
-    processed_images = already_processed_images(csv_filename)
+    processed_images = get_processed_images(csv_filename)
     all_current_images = get_all_images(root_folder)
 
-    # Identify new and removed images
     new_images = all_current_images - processed_images
-    removed_images = processed_images - all_current_images
 
     new_data = []
     for image_key in new_images:
@@ -170,29 +125,20 @@ def update_csv_with_changes(root_folder, csv_filename):
         print(f"GDP for {city_folder}/{image_file}: {gdp}")
         new_data.append({
             'satellite_img_name': image_key,
-            'BD09 coordinate': f"({x * 256 * 2 ** (18 - 16)}, {y * 256 * 2 ** (18 - 16)})",
+            'BD09 coordinate': f"({x * 256 * 2 ** (18 - zoom)}, {y * 256 * 2 ** (18 - zoom)})",
             'WGS84 coordinate': f"({lat}, {lon})",
             'carbon_emissions (ton)': emission_value,
             'population (unit)': population,
             'gdp (million yuan)': gdp,
         })
 
-    # Process CSV: Load, Remove old entries, Append new data, and Rewrite
-    with open(csv_filename, 'r') as csvfile:
-        reader = list(csv.DictReader(csvfile))
-    # Filtering out removed images
-    reader = [row for row in reader if row['satellite_img_name'] not in removed_images]
-
-    # Append new data and rewrite CSV
-    with open(csv_filename, 'w', newline='') as csvfile:
-        fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate', 'carbon_emissions (ton)',
-                      'population (unit)', 'gdp (million yuan)']
+    # Append new data to CSV
+    with open(csv_filename, 'a', newline='') as csvfile:
+        fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate',
+                      'carbon_emissions (ton)', 'population (unit)', 'gdp (million yuan)']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(reader)  # Existing data
-        writer.writerows(new_data)  # New data
+        writer.writerows(new_data)
 
 
-# Running the main function
 if __name__ == "__main__":
     update_csv_with_changes(root_folder, csv_filename)
