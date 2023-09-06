@@ -12,9 +12,9 @@ ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
 carbon_emissions_tif_path = "/Users/zhongsiru/project/src/dataset/odiac/2021/odiac2022_1km_excl_intl_2112.tif"
 worldtop_population_tif_path = "/Users/zhongsiru/project/src/dataset/worldtop/chn_ppp_2020_1km_Aggregated.tif"
 gpp_tif_path = "/Users/zhongsiru/project/src/dataset/gdp/2010/cngdp2010.tif"
-zoom = 19
-root_folder = "/Users/zhongsiru/project/src/satellite-image-crawl/tiles"
-csv_filename = "integrated_satellite_data.csv"
+zoom = 16
+root_folder = "/Users/zhongsiru/project/src/dataset/satellite/baidu_satellite_extended"
+csv_filename = "/Users/zhongsiru/project/src/dataset/satellite/baidu_satellite_extended/integrated_satellite_data.csv"
 
 
 def bd_xy2latlng(zoom, x, y):
