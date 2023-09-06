@@ -1,27 +1,30 @@
-from osgeo import gdal
+import rasterio
+from pyproj import Transformer
 
 
-def get_value_at_coords(file_path, lon, lat):
-    # 打开数据集
-    dataset = gdal.Open(file_path)
+def get_gdp_at_location(tif_path, lon, lat):
+    with rasterio.open(tif_path) as src:
+        # 创建坐标转换器
+        transformer = Transformer.from_crs("EPSG:4326", src.crs, always_xy=True)
 
-    # 获取地理转换参数
-    transform = dataset.GetGeoTransform()
+        # 将经纬度坐标转换为投影坐标
+        x, y = transformer.transform(lon, lat)
 
-    # 计算像素位置
-    col = int((lon - transform[0]) / transform[1])
-    row = int((lat - transform[3]) / transform[5])
+        # 将投影坐标转换为行列坐标
+        row, col = src.index(x, y)
 
-    # 获取数据
-    band = dataset.GetRasterBand(1)
-    data = band.ReadAsArray(col, row, 1, 1)
+        # 检查索引是否在有效范围内
+        if 0 <= row < src.height and 0 <= col < src.width:
+            # 读取该位置的数据
+            gdp_value = src.read(1)[row, col]
+        else:
+            return None  # 或者返回其他默认值，如0
 
-    return data[0, 0]
+    return gdp_value
 
 
 # 使用示例
-file_path = "/Users/zhongsiru/project/src/dataset/gdp2019/gdp2019/w001001.adf"  # 这是主数据文件的路径
-lon, lat = 120.5, 30.5  # 你想查询的经纬度
-value = get_value_at_coords(file_path, lon, lat)
-print(f"Value at ({lon}, {lat}): {value}")
-
+tif_path = "/Users/zhongsiru/project/src/dataset/gdp/2010/cngdp2010.tif"
+lon, lat = 116.4074, 39.9042  # 例如：北京的经纬度
+gdp_value = get_gdp_at_location(tif_path, lon, lat)
+print(f"GDP value at ({lon}, {lat}) is: {gdp_value}")
