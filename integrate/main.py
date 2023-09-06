@@ -1,8 +1,10 @@
 import csv
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 import rasterio
 import requests
+from loguru import logger
 from pyproj import Transformer
 
 # Configuration parameters
@@ -104,6 +106,29 @@ def initialize_csv_file(filename):
         csv.DictWriter(csvfile, fieldnames=fieldnames).writeheader()
 
 
+def process_image(image_key):
+    city_folder, image_file = image_key.split("/")
+    x, y = extract_coordinates_from_filename(image_file)
+    lat, lon = bd_xy2latlng(zoom, x, y)
+    emission_value = get_point_carbon_emission(x, y)
+    population = get_point_population(x, y)
+    gdp = get_point_gdp(x, y)
+
+    logger.info(f"Data for {city_folder}/{image_file}: "
+                f"Carbon emission: {emission_value}, "
+                f"Population: {population}, "
+                f"GDP: {gdp}")
+
+    return {
+        'satellite_img_name': image_key,
+        'BD09 coordinate': f"({x * 256 * 2 ** (18 - zoom)},{y * 256 * 2 ** (18 - zoom)})",
+        'WGS84 coordinate': f"({lat}, {lon})",
+        'carbon_emissions (ton)': emission_value,
+        'population (unit)': population,
+        'gdp (million yuan)': gdp,
+    }
+
+
 def update_csv_with_changes(root_folder, csv_filename):
     initialize_csv_file(csv_filename)
 
@@ -112,25 +137,8 @@ def update_csv_with_changes(root_folder, csv_filename):
 
     new_images = all_current_images - processed_images
 
-    new_data = []
-    for image_key in new_images:
-        city_folder, image_file = image_key.split("/")
-        x, y = extract_coordinates_from_filename(image_file)
-        lat, lon = bd_xy2latlng(zoom, x, y)
-        emission_value = get_point_carbon_emission(x, y)
-        population = get_point_population(x, y)
-        gdp = get_point_gdp(x, y)
-        print(f"Carbon emission for {city_folder}/{image_file}: {emission_value}")
-        print(f"Population for {city_folder}/{image_file}: {population}")
-        print(f"GDP for {city_folder}/{image_file}: {gdp}")
-        new_data.append({
-            'satellite_img_name': image_key,
-            'BD09 coordinate': f"({x * 256 * 2 ** (18 - zoom)}, {y * 256 * 2 ** (18 - zoom)})",
-            'WGS84 coordinate': f"({lat}, {lon})",
-            'carbon_emissions (ton)': emission_value,
-            'population (unit)': population,
-            'gdp (million yuan)': gdp,
-        })
+    with ThreadPoolExecutor(max_workers=18) as executor:  # You can adjust max_workers based on your needs.
+        new_data = list(executor.map(process_image, new_images))
 
     # Append new data to CSV
     with open(csv_filename, 'a', newline='') as csvfile:
@@ -141,4 +149,5 @@ def update_csv_with_changes(root_folder, csv_filename):
 
 
 if __name__ == "__main__":
+    logger.info("Starting data extraction...")
     update_csv_with_changes(root_folder, csv_filename)
