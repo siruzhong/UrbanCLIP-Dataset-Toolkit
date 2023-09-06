@@ -129,23 +129,31 @@ def process_image(image_key):
     }
 
 
-def update_csv_with_changes(root_folder, csv_filename):
+def update_csv_with_changes(root_folder, csv_filename, batch_size=10):
     initialize_csv_file(csv_filename)
 
     processed_images = get_processed_images(csv_filename)
     all_current_images = get_all_images(root_folder)
+    new_images = list(all_current_images - processed_images)
 
-    new_images = all_current_images - processed_images
+    num_batches = len(new_images) // batch_size + (1 if len(new_images) % batch_size else 0)
+    logger.info(f"Processing {len(new_images)} new images in {num_batches} batches")
+    for batch_num in range(num_batches):
+        batch_start = batch_num * batch_size
+        batch_end = min((batch_num + 1) * batch_size, len(new_images))
+        current_batch = new_images[batch_start:batch_end]
 
-    with ThreadPoolExecutor(max_workers=18) as executor:  # You can adjust max_workers based on your needs.
-        new_data = list(executor.map(process_image, new_images))
+        with ThreadPoolExecutor(max_workers=18) as executor:
+            new_data = list(executor.map(process_image, current_batch))
 
-    # Append new data to CSV
-    with open(csv_filename, 'a', newline='') as csvfile:
-        fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate',
-                      'carbon_emissions (ton)', 'population (unit)', 'gdp (million yuan)']
-        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-        writer.writerows(new_data)
+        # Append new data to CSV
+        with open(csv_filename, 'a', newline='') as csvfile:
+            fieldnames = ['satellite_img_name', 'BD09 coordinate', 'WGS84 coordinate',
+                          'carbon_emissions (ton)', 'population (unit)', 'gdp (million yuan)']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerows(new_data)
+
+        logger.info(f"Finished processing batch {batch_num + 1}/{num_batches}")
 
 
 if __name__ == "__main__":
