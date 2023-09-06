@@ -35,36 +35,33 @@ def bd_xy2latlng(zoom, x, y):
     return loc['y'], loc['x']  # latitude, longitude
 
 
-def read_raster_value_at_coordinate(tif_path, x, y):
-    """Retrieve raster value for a specific point using its x, y coordinates."""
+def read_raster_value_at_coordinate(tif_path, lat, lon):
+    """Retrieve raster value for a specific point using its lat, lon."""
     with rasterio.open(tif_path) as src:
-        lat, lon = bd_xy2latlng(zoom, x, y)
         row, col = src.index(lon, lat)
         data = src.read(1)
         return data[row, col]
 
 
-def get_point_carbon_emission(x, y):
+def get_point_carbon_emission(lat, lon):
     """Retrieve carbon emission value for a specific point."""
-    return read_raster_value_at_coordinate(carbon_emissions_tif_path, x, y)
+    return read_raster_value_at_coordinate(carbon_emissions_tif_path, lat, lon)
 
 
-def get_point_population(x, y):
+def get_point_population(lat, lon):
     """Retrieve population value for a specific point."""
-    population = round(read_raster_value_at_coordinate(worldtop_population_tif_path, x, y))
-    return max(0, population)  # Ensure no negative values
+    return max(0, round(read_raster_value_at_coordinate(worldtop_population_tif_path, lat, lon)))
 
 
-def get_point_gdp(x, y):
+def get_point_gdp(lat, lon):
     """Retrieve GDP value for a specific point."""
     with rasterio.open(gpp_tif_path) as src:
-        lat, lon = bd_xy2latlng(zoom, x, y)
         transformer = Transformer.from_crs("EPSG:4326", src.crs, always_xy=True)
         x_transformed, y_transformed = transformer.transform(lon, lat)
         row, col = src.index(x_transformed, y_transformed)
         if 0 <= row < src.height and 0 <= col < src.width:
             gdp_value = src.read(1)[row, col]
-            return max(0, gdp_value)  # Ensure no negative values
+            return max(0, gdp_value)
         return 0
 
 
@@ -110,9 +107,10 @@ def process_image(image_key):
     city_folder, image_file = image_key.split("/")
     x, y = extract_coordinates_from_filename(image_file)
     lat, lon = bd_xy2latlng(zoom, x, y)
-    emission_value = get_point_carbon_emission(x, y)
-    population = get_point_population(x, y)
-    gdp = get_point_gdp(x, y)
+
+    emission_value = get_point_carbon_emission(lat, lon)
+    population = get_point_population(lat, lon)
+    gdp = get_point_gdp(lat, lon)
 
     logger.info(f"Data for {city_folder}/{image_file}: "
                 f"Carbon emission: {emission_value}, "
