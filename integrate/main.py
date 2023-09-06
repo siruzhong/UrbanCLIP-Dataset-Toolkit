@@ -129,7 +129,7 @@ def process_image(image_key):
     }
 
 
-def update_csv_with_changes(root_folder, csv_filename, batch_size=10):
+def update_csv_with_changes(root_folder, csv_filename, batch_size=100):
     initialize_csv_file(csv_filename)
 
     processed_images = get_processed_images(csv_filename)
