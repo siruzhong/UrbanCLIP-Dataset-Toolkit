@@ -8,7 +8,9 @@ from loguru import logger
 from pyproj import Transformer
 
 # Configuration parameters
-ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
+ak = 'XpLXDmb2GCyYXowGrHLmqhF698Blgpw8'
+ak_list = ['1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O', 'hUzFTpSqg4KlmIcT8Q6e3pDIRxNnFa0i', 'qzyVPm1HIlfEAsdQ0ZCVQGIgBQ9gsyiY',
+           '5abRoVDxe8ek6FFySQaUazGlX6GAqQgQ', 'rNonuzLudkR85Gsxx962yAcQQKTqoQjQ', 'XpLXDmb2GCyYXowGrHLmqhF698Blgpw8']
 carbon_emissions_tif_path = "/Users/zhongsiru/project/src/dataset/odiac/2021/odiac2022_1km_excl_intl_2112.tif"
 worldtop_population_tif_path = "/Users/zhongsiru/project/src/dataset/worldtop/chn_ppp_2020_1km_Aggregated.tif"
 gpp_tif_path = "/Users/zhongsiru/project/src/dataset/gdp/2010/cngdp2010.tif"
@@ -127,7 +129,7 @@ def process_image(image_key):
     }
 
 
-def update_csv_with_changes(root_folder, csv_filename, batch_size=100):
+def update_csv_with_changes(root_folder, csv_filename, batch_size=20):
     initialize_csv_file(csv_filename)
 
     processed_images = get_processed_images(csv_filename)
@@ -141,7 +143,7 @@ def update_csv_with_changes(root_folder, csv_filename, batch_size=100):
         batch_end = min((batch_num + 1) * batch_size, len(new_images))
         current_batch = new_images[batch_start:batch_end]
 
-        with ThreadPoolExecutor(max_workers=18) as executor:
+        with ThreadPoolExecutor(max_workers=20) as executor:
             new_data = list(executor.map(process_image, current_batch))
 
         # Append new data to CSV
