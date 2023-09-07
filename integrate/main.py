@@ -121,7 +121,7 @@ def process_image(image_key):
 
     return {
         'satellite_img_name': image_key,
-        'BD09 coordinate': f"({x * 256 * 2 ** (18 - zoom)},{y * 256 * 2 ** (18 - zoom)})",
+        'BD09 coordinate': f"({x},{y})",
         'WGS84 coordinate': f"({lat}, {lon})",
         'carbon_emissions (ton)': emission_value,
         'population (unit)': population,
