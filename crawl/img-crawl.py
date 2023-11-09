@@ -106,6 +106,7 @@ def main():
     # Define the latitude and longitude range of cities
     # Coordinate picker viewable at: https://api.map.baidu.com/lbsapi/getpoint/index.html
     cities = {
+        # [39.7555,116.0392] is the lower left(southwest) corner, [40.1536, 116.7914] is the upper right(northeast) corner
         'Beijing': (39.7555, 40.1536, 116.0392, 116.7914),
         'Shanghai': (30.975, 31.5149, 121.1016, 121.8044),
         'Guangzhou': (22.9391, 23.3967, 113.1016, 113.6777),

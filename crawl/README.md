@@ -42,8 +42,8 @@ shortened table:
 4. **Set City Parameters**  
    Modify the cities dictionary in the script to include the desired cities. To define the area for image retrieval, use
    the Baidu Maps Point Coordinate tool at https://api.map.baidu.com/lbsapi/getpoint/index.html to determine the
-   latitude and longitude range of your region of interest, specifically the coordinates for the upper left (Northwest)
-   and lower right (Southeast) corners.
+   latitude and longitude range of your region of interest, specifically the coordinates for the lower left (southwest)
+   and upper right (northeast) corners.
 5. **Adjust Zoom Level**  
    The zoom level in satellite image retrieval dictates the scale represented by each pixel. A correspondence table is
    provided to help you choose the correct zoom level for your needs. In this project, zoom level 16, which corresponds
