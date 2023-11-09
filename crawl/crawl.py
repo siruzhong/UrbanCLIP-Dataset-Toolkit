@@ -15,6 +15,7 @@ from loguru import logger
 # Configuration viewable at: https://lbsyun.baidu.com/apiconsole/center#/home
 ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
 
+
 # Convert latitude and longitude to Baidu map coordinates
 def bd_latlng2xy(zoom, latitude, longitude):
     url = "https://api.map.baidu.com/geoconv/v1/"
@@ -33,6 +34,7 @@ def bd_latlng2xy(zoom, latitude, longitude):
     x = loc['x'] / res
     y = loc['y'] / res
     return x, y
+
 
 # Download map tiles
 def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, longitude_stop, satellite=True):
@@ -67,6 +69,7 @@ def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, l
         for future in futures:
             future.result()
 
+
 # Download an individual map tile
 def download_tile(x, y, zoom, satellite, root_save):
     if satellite:
@@ -96,6 +99,7 @@ def download_tile(x, y, zoom, satellite, root_save):
     else:
         logger.info(f"File already exists: {filename}")
 
+
 def main():
     # Define the latitude and longitude range of cities
     # Coordinate picker viewable at: https://api.map.baidu.com/lbsapi/getpoint/index.html
@@ -115,6 +119,7 @@ def main():
         logger.info(f"Downloading tiles for {city}...")
         lat_start, lat_stop, lon_start, lon_stop = coordinates
         download_tiles(city, zoom, lat_start, lat_stop, lon_start, lon_stop, satellite)
+
 
 if __name__ == "__main__":
     main()
