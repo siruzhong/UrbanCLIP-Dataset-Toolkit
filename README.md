@@ -1,6 +1,6 @@
-# UrbanCLIP Dataset Toolkit
+# UrbanInsight Dataset Toolkit
 
-Welcome to the UrbanCLIP Dataset Toolkit, a comprehensive tool chain designed to facilitate the collection, processing, and integration of satellite imagery and associated metadata for urban analysis. This repository encompasses a full pipeline from data acquisition through potential data augmentation modules to the generation of descriptive captions, and the aggregation of key datasets such as Population, GDP, and Carbon Emissions with satellite imagery.
+Welcome to the UrbanInsight Dataset Toolkit, a comprehensive tool chain designed to facilitate the collection, processing, and integration of satellite imagery and associated metadata for urban analysis. This repository encompasses a full pipeline from data acquisition through potential data augmentation modules to the generation of descriptive captions, and the aggregation of key datasets such as Population, GDP, and Carbon Emissions with satellite imagery.
 
 This project is structured into four key directories:
 + `crawl`: For satellite imagery acquisition.
@@ -10,9 +10,7 @@ This project is structured into four key directories:
 
 ## Research and Citation
 
-The work presented in this repository is in conjunction with the research findings published in our paper. For a detailed explanation of the methodologies, results, and implications of our work, please refer to the paper titled "UrbanCLIP: Connecting Images and Texts in Cities for Understanding Urban Dynamics" available on arXiv:
-
-[When Urban Region Profiling Meets Large Language Models](https://arxiv.org/abs/2310.18340)
+The work presented in this repository is in conjunction with the research findings published in our paper. For a detailed explanation of the methodologies, results, and implications of our work, please refer to the paper titled [When Urban Region Profiling Meets Large Language Models](https://arxiv.org/abs/2310.18340) available on arXiv. 
 
 If you utilize this dataset, codebase, or methodology in your work, please cite our paper as follows:
 
