@@ -5,19 +5,21 @@ import shutil
 
 def find_and_extract_images_with_keyword(json_file, keyword):
     """
-    在给定的JSON文件中查找包含关键词的图片，并返回它们。
-    :param json_file: 要查询的JSON文件路径。
-    :param keyword: 要在标题中查找的关键词。
-    :return: 与关键词匹配的条目的列表，以及与这些条目关联的图片的列表。
+    Searches for images containing the keyword in the given JSON file and returns them.
+    :param json_file: Path to the JSON file to be searched.
+    :param keyword: The keyword to look for in the captions.
+    :return: A list of entries that match the keyword and a list of images associated with those entries.
     """
     with open(json_file, 'r') as f:
         data = json.load(f)
 
-    images_with_keyword = set()  # 使用集合确保图片是唯一的
+    images_with_keyword = set()  # Use a set to ensure uniqueness of images
     extracted_data = []
 
-    for entry_group in data:  # data是一个外部列表
-        for entry in entry_group:  # entry_group是内部列表
+    # 'data' is an outer list containing nested lists
+    for entry_group in data:
+        # 'entry_group' is an inner list
+        for entry in entry_group:
             if keyword in entry['caption']:
                 images_with_keyword.add(entry['image'])
                 extracted_data.append(entry)
@@ -27,52 +29,52 @@ def find_and_extract_images_with_keyword(json_file, keyword):
 
 def remove_images_from_data(json_file, images_to_remove):
     """
-    从JSON文件中删除指定的图片条目。
-    :param json_file: 要修改的JSON文件路径。
-    :param images_to_remove: 要从文件中删除的图片列表。
+    Removes specified image entries from a JSON file.
+    :param json_file: Path to the JSON file to be modified.
+    :param images_to_remove: List of images to be removed from the file.
     """
     with open(json_file, 'r') as f:
         data = json.load(f)
 
-    # 删除与指定图片匹配的条目
+    # Remove entries matching the specified images
     for entry_group in data:
         entry_group[:] = [entry for entry in entry_group if entry['image'] not in images_to_remove]
 
-    # 删除空的entry_groups
+    # Remove any empty entry groups
     data[:] = [entry_group for entry_group in data if entry_group]
 
-    # 重新写入到JSON文件
+    # Write the updated data back to the JSON file
     with open(json_file, 'w') as f:
         json.dump(data, f, indent=2)
 
 
 def save_to_new_json(data, new_json_file):
     """
-    将数据保存到新的JSON文件中。如果文件已存在，此函数将追加数据，而不是覆盖它。
-    :param data: 要保存的数据。
-    :param new_json_file: 数据要保存的文件的路径。
+    Saves the data to a new JSON file. If the file already exists, this function appends data rather than overwriting it.
+    :param data: The data to be saved.
+    :param new_json_file: Path of the file where data is to be saved.
     """
     existing_data = []
 
-    # 如果文件已存在，读取其内容
+    # If the file already exists, read its content
     if os.path.exists(new_json_file):
         with open(new_json_file, 'r') as f:
             existing_data = json.load(f)
 
-    # 添加新的数据
+    # Add the new data
     existing_data.extend(data)
 
-    # 写回数据
+    # Write the data back
     with open(new_json_file, 'w') as f:
         json.dump(existing_data, f, indent=4)
 
 
 def move_images_to_folder(images, source_folder, destination_folder):
     """
-    将图片从一个文件夹移动到另一个文件夹。
-    :param images: 要移动的图片的列表。
-    :param source_folder: 图片当前的文件夹。
-    :param destination_folder: 图片要移动到的目标文件夹。
+    Moves images from one folder to another.
+    :param images: A list of images to be moved.
+    :param source_folder: The current folder of the images.
+    :param destination_folder: The target folder to which the images will be moved.
     """
     if not os.path.exists(destination_folder):
         os.makedirs(destination_folder)
@@ -93,24 +95,24 @@ json_dir = 'pairs'
 city_list = ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen']
 
 if __name__ == "__main__":
-    # 指定多个JSON文件的路径
+    # Specifying paths for multiple JSON files
     for city in city_list:
         json_file = os.path.join(json_dir, city + "_captions.json")
 
-        # 根据关键词找到图片
+        # Find images based on the keyword
         extracted_data, images_to_remove = find_and_extract_images_with_keyword(json_file, 'ocean')
 
-        # 移动找到的图片到指定文件夹
+        # Move found images to a specific folder
         move_images_to_folder(images_to_remove, os.path.join(img_base_dir, city),
                               os.path.join(img_filter_base_dir, city))
 
-        # 从原始数据中删除找到的图片
+        # Remove found images from the original data
         remove_images_from_data(json_file, images_to_remove)
 
-        # 将提取的数据保存到新的JSON文件中
+        # Save the extracted data to a new JSON file
         save_to_new_json(extracted_data, os.path.join(img_filter_base_dir, 'ocean.json'))
 
-        # 打印已删除的图片列表
+        # Print the list of removed images
         print("Removed images:")
         for img in images_to_remove:
             print(img)
