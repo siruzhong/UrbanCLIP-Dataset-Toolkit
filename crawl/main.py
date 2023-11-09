@@ -6,20 +6,19 @@ from concurrent.futures import ThreadPoolExecutor
 import requests
 from loguru import logger
 
-# 定义三种主要坐标系
-# WGS84：GPS全球卫星定位系统使用的坐标系。
-# GCJ02：火星坐标系，由中国国家测绘局制订的坐标系统。
-# BD09：百度地图所使用的坐标体系。
+# Define three main coordinate systems
+# WGS84: The coordinate system used by the GPS global satellite positioning system.
+# GCJ02: Mars coordinate system, the coordinate system formulated by the State Bureau of Surveying and Mapping of China.
+# BD09: The coordinate system used by Baidu Maps.
 
-# 百度地图的访问密钥
-# 配置可见:https://lbsyun.baidu.com/apiconsole/center#/home
+# Access key for Baidu Maps
+# Configuration viewable at: https://lbsyun.baidu.com/apiconsole/center#/home
 ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
 
-
-# 将经纬度转换成百度坐标系
+# Convert latitude and longitude to Baidu map coordinates
 def bd_latlng2xy(zoom, latitude, longitude):
     url = "https://api.map.baidu.com/geoconv/v1/"
-    # 详细参数可见 https://lbs.baidu.com/faq/api?title=webapi/guide/changeposition-base
+    # For detailed parameters, refer to https://lbs.baidu.com/faq/api?title=webapi/guide/changeposition-base
     params = {
         "coords": str(longitude) + ',' + str(latitude),
         "from": "5",
@@ -30,23 +29,22 @@ def bd_latlng2xy(zoom, latitude, longitude):
     result = response.json()
     logger.info(f'result: {result}')
     loc = result["result"][0]
-    res = 2 ** (18 - zoom)  # 计算缩放比例
+    res = 2 ** (18 - zoom)  # Calculate the scaling factor
     x = loc['x'] / res
     y = loc['y'] / res
     return x, y
 
-
-# 下载地图切片
+# Download map tiles
 def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, longitude_stop, satellite=True):
-    # 创建保存目录，每个城市有单独的子目录
+    # Create a save directory with a separate subdirectory for each city
     root_save = os.path.join("tiles", city)
     os.makedirs(root_save, exist_ok=True)
 
-    # 获取坐标转换
+    # Perform coordinate conversion
     start_x, start_y = bd_latlng2xy(zoom, latitude_start, longitude_start)
     stop_x, stop_y = bd_latlng2xy(zoom, latitude_stop, longitude_stop)
 
-    # 计算切片范围
+    # Calculate tile range
     start_x = int(start_x // 256)
     start_y = int(start_y // 256)
     stop_x = int(stop_x // 256)
@@ -59,31 +57,30 @@ def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, l
     logger.info(f'x range: {start_x} to {stop_x}')
     logger.info(f'y range: {start_y} to {stop_y}')
 
-    # 循环下载每个切片，使用自定义大小的线程池，例如设置max_workers=666
+    # Loop to download each tile, using a thread pool of custom size, e.g., max_workers=666
     with ThreadPoolExecutor(max_workers=666) as executor:
         futures = []
         for x in range(start_x, stop_x):
             for y in range(start_y, stop_y):
                 futures.append(executor.submit(download_tile, x, y, zoom, satellite, root_save))
-        # 等待所有线程完成
+        # Wait for all threads to complete
         for future in futures:
             future.result()
 
-
-# 下载单个地图切片
+# Download an individual map tile
 def download_tile(x, y, zoom, satellite, root_save):
     if satellite:
-        # 卫星图像URL
+        # Satellite imagery URL
         url = f"http://shangetu0.map.bdimg.com/it/u=x={x};y={y};z={zoom};v=009;type=sate&fm=46&udt=20150504&app=webearth2&v=009&udt=20150601"
         filename = f"{zoom}_{x}_{y}_s.jpg"
     else:
-        # 道路图像URL
+        # Road map image URL
         url = f'http://online3.map.bdimg.com/tile/?qt=tile&x={x}&y={y}&z={zoom}&styles=pl&scaler=1&udt=20180810'
         filename = f"{zoom}_{x}_{y}_r.png"
 
     filename = os.path.join(root_save, filename)
 
-    # 检查文件是否存在，如不存在则下载
+    # Check if the file exists, download if it doesn't
     if not os.path.exists(filename):
         try:
             logger.info(f'downloading filename: {filename}')
@@ -93,16 +90,15 @@ def download_tile(x, y, zoom, satellite, root_save):
             logger.info(f"-- saving {filename}")
             with open(filename, 'wb') as f:
                 f.write(response.content)
-            time.sleep(random.random())  # 随机休眠减轻服务器负担
+            time.sleep(random.random())  # Random sleep to reduce server load
         except requests.RequestException as e:
             logger.info(f"-- {filename} -> {e}")
     else:
         logger.info(f"File already exists: {filename}")
 
-
 def main():
-    # 定义城市的经纬度范围
-    # 坐标拾取可见:https://api.map.baidu.com/lbsapi/getpoint/index.html
+    # Define the latitude and longitude range of cities
+    # Coordinate picker viewable at: https://api.map.baidu.com/lbsapi/getpoint/index.html
     cities = {
         'Beijing': (39.7555, 40.1536, 116.0392, 116.7914),
         'Shanghai': (30.975, 31.5149, 121.1016, 121.8044),
@@ -110,16 +106,15 @@ def main():
         'Shenzhen': (22.4486, 22.8456, 113.7516, 114.6166)
     }
 
-    zoom = 16  # 粗粒度缩放级别
-    # zoom = 19  # 细粒度缩放级别
-    satellite = True  # 卫星图(如果为False，则下载道路图像)
+    zoom = 16  # Coarse zoom level
+    # zoom = 19  # Fine zoom level
+    satellite = True  # Satellite image (if False, download road images)
 
-    # 遍历城市并下载相应的卫星图
+    # Loop through the cities and download the corresponding satellite images
     for city, coordinates in cities.items():
         logger.info(f"Downloading tiles for {city}...")
         lat_start, lat_stop, lon_start, lon_stop = coordinates
         download_tiles(city, zoom, lat_start, lat_stop, lon_start, lon_stop, satellite)
-
 
 if __name__ == "__main__":
     main()
