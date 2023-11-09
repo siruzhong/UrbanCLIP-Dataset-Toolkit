@@ -8,6 +8,26 @@ This project is structured into four key directories:
 + `integrate`: For the integration of datasets.
 + `augment`: For potential data augmentation to enrich the dataset.
 
+## Research and Citation
+
+The work presented in this repository is in conjunction with the research findings published in our paper. For a detailed explanation of the methodologies, results, and implications of our work, please refer to the paper titled "UrbanCLIP: Connecting Images and Texts in Cities for Understanding Urban Dynamics" available on arXiv:
+
+[When Urban Region Profiling Meets Large Language Models](https://arxiv.org/abs/2310.18340)
+
+If you utilize this dataset, codebase, or methodology in your work, please cite our paper as follows:
+
+```
+@misc{yan2023urban,
+      title={When Urban Region Profiling Meets Large Language Models}, 
+      author={Yibo Yan and Haomin Wen and Siru Zhong and Wei Chen and Haodong Chen and Qingsong Wen and Roger Zimmermann and Yuxuan Liang},
+      year={2023},
+      eprint={2310.18340},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
+```
+
+
 ## Directory Overview
 
 ### Data Crawl
