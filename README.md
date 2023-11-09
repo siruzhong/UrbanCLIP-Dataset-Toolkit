@@ -1,6 +1,6 @@
-# UrbanCLIP Dataset Project
+# UrbanCLIP Dataset Toolkit
 
-Welcome to the UrbanCLIP Dataset repository, a comprehensive toolkit designed to facilitate the collection, processing, and integration of satellite imagery and associated metadata for urban analysis. This repository encompasses a full pipeline from data acquisition through potential data augmentation modules to the generation of descriptive captions, and the aggregation of key datasets such as Population, GDP, and Carbon Emissions with satellite imagery.
+Welcome to the UrbanCLIP Dataset Toolkit, a comprehensive tool chain designed to facilitate the collection, processing, and integration of satellite imagery and associated metadata for urban analysis. This repository encompasses a full pipeline from data acquisition through potential data augmentation modules to the generation of descriptive captions, and the aggregation of key datasets such as Population, GDP, and Carbon Emissions with satellite imagery.
 
 This project is structured into four key directories:
 + `crawl`: For satellite imagery acquisition.
