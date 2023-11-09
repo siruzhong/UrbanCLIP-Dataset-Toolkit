@@ -87,9 +87,9 @@ def move_images_to_folder(images, source_folder, destination_folder):
             print(f"Warning: Image {source_image_path} not found!")
 
 
-img_base_dir = "../tiles-extended"
+img_base_dir = "../tiles"
 img_filter_base_dir = img_base_dir + '/ocean'
-json_dir = './pairs-extended'
+json_dir = 'pairs'
 city_list = ['Beijing', 'Shanghai', 'Guangzhou', 'Shenzhen']
 
 if __name__ == "__main__":
