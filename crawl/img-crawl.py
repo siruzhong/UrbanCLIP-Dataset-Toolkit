@@ -15,7 +15,7 @@ Define three main coordinate systems
 
 # Access key for Baidu Maps
 # Configuration viewable at: https://lbsyun.baidu.com/apiconsole/center#/home
-ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
+ak = 'Replace with your own Baidu ak'
 
 
 # Convert latitude and longitude to Baidu map coordinates

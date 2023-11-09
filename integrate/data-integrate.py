@@ -8,9 +8,7 @@ from loguru import logger
 from pyproj import Transformer
 
 # Configuration parameters
-ak = 'XpLXDmb2GCyYXowGrHLmqhF698Blgpw8'
-ak_list = ['1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O', 'hUzFTpSqg4KlmIcT8Q6e3pDIRxNnFa0i', 'qzyVPm1HIlfEAsdQ0ZCVQGIgBQ9gsyiY',
-           '5abRoVDxe8ek6FFySQaUazGlX6GAqQgQ', 'rNonuzLudkR85Gsxx962yAcQQKTqoQjQ', 'XpLXDmb2GCyYXowGrHLmqhF698Blgpw8']
+ak = 'Replace with your own Baidu ak'
 carbon_emissions_tif_path = "/Users/zhongsiru/project/src/dataset/odiac/2021/odiac2022_1km_excl_intl_2112.tif"
 worldtop_population_tif_path = "/Users/zhongsiru/project/src/dataset/worldtop/chn_ppp_2020_1km_Aggregated.tif"
 gpp_tif_path = "/Users/zhongsiru/project/src/dataset/gdp/2010/cngdp2010.tif"
