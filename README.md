@@ -8,6 +8,8 @@ This project is structured into four key directories:
 + `integrate`: For the integration of datasets.
 + `augment`: For potential data augmentation to enrich the dataset.
 
+![data-flow](dataflow.png)
+
 ## Research and Citation
 
 The work presented in this repository is in conjunction with the research findings published in our paper. For a detailed explanation of the methodologies, results, and implications of our work, please refer to the paper titled [When Urban Region Profiling Meets Large Language Models](https://arxiv.org/abs/2310.18340) available on arXiv. 
