@@ -6,10 +6,12 @@ from concurrent.futures import ThreadPoolExecutor
 import requests
 from loguru import logger
 
-# Define three main coordinate systems
-# WGS84: The coordinate system used by the GPS global satellite positioning system.
-# GCJ02: Mars coordinate system, the coordinate system formulated by the State Bureau of Surveying and Mapping of China.
-# BD09: The coordinate system used by Baidu Maps.
+"""
+Define three main coordinate systems
+    - WGS84: The coordinate system used by the GPS global satellite positioning system.
+    - GCJ02: Mars coordinate system, the coordinate system formulated by the State Bureau of Surveying and Mapping of China.
+    - BD09: The coordinate system used by Baidu Maps.
+"""
 
 # Access key for Baidu Maps
 # Configuration viewable at: https://lbsyun.baidu.com/apiconsole/center#/home

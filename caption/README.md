@@ -54,3 +54,6 @@ pip install websockets loguru
 ## Support
 
 If you require assistance with these scripts, please initiate an issue in this repository.
+
+---
+*Note: This project and script are intended solely for educational and personal use. Ensure compliance with the terms and conditions of any interacted API.*

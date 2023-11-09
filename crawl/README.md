@@ -1,50 +1,53 @@
-本目录提供一个Python脚本[main.py](crawl.py)，用于从百度地图中获取卫星图像并将其转化为地图瓦片。该脚本使用百度地图API来获取卫星图像，并将其保存为特定城市的地图瓦片。这些瓦片可以在各种地图和可视化项目中使用。
+# Satellite Image Crawler for Baidu Maps
 
-## 城市和坐标
+This directory provides a Python script, [img-crawl.py](img-crawl.py), designed to retrieve satellite images from Baidu Maps and convert them into map tiles. The script utilizes the Baidu Maps API to acquire satellite imagery, saving it as map tiles for specific cities. These tiles can be employed in various mapping and visualization projects.
 
-| 城市       | 左下角经纬度          | 右上角经纬度          | 图像数量   |
-|------------|-----------------------|-----------------------|------------|
-| 北京       | (39.7555, 116.0392)   | (40.1536, 116.7914)   | 295,405    |
-| 上海       | (30.975, 30.975)      | (31.5149, 121.8044)   | 334,764    |
-| 广州       | (22.9391, 113.1016)   | (40.1536, 113.6777)   | 216,864    |
-| 深圳       | (22.4486, 113.7516)   | (22.8456, 114.6166)   | 281,242    |
+## Cities and Coordinates
 
-+ 像素尺寸：256x256
+The table below lists the cities along with their corresponding bounding coordinates (lower-left and upper-right) and the number of images that can be obtained at a scale of 16:
 
-## 使用方法
+| City      | Lower-left Coordinates | Upper-right Coordinates | Image Count at Scale=16 |
+|-----------|------------------------|-------------------------|-------------------------|
+| Beijing   | (39.7555, 116.0392)    | (40.1536, 116.7914)     | 4,592                   |
+| Shanghai  | (30.975, 121.975)      | (31.5149, 121.8044)     | 5,244                   |
+| Guangzhou | (22.9391, 113.1016)    | (23.1536, 113.6777)     | 3,402                   |
+| Shenzhen  | (22.4486, 113.7516)    | (22.8456, 114.6166)     | 4,324                   |
++ Pixel Dimensions: 256x256
 
-1. 克隆本仓库到您的本地计算机：
+## How to Use
+
+1. Clone this repository to your local machine:
 
 ```shell
 git clone https://github.com/siruzhong/satellite-image-crawl.git
 cd satellite-image-crawl
 ```
 
-2. 安装所需的依赖包。
+2. Install the required dependencies.
 
-3. 在脚本中更新`ak`变量为您的百度地图API密钥。您可以在[百度地图API控制台](https://lbsyun.baidu.com/apiconsole/center#/home)上注册并获得API密钥。
+3. Update the `ak` variable in the script with your Baidu Map API key. You can register and obtain an API key from the [Baidu Maps API Console](https://lbsyun.baidu.com/apiconsole/center#/home).
 
-4. 调整脚本中的`cities`字典，包括您要获取图像的城市以及它们的纬度和经度范围。
+4. Adjust the `cities` dictionary in the script to include the cities from which you want to retrieve images, along with their latitude and longitude ranges.
 
-5. 运行脚本：
+5. Execute the script:
 
 ```shell
 python satellite_crawl.py
 ```
 
-该脚本将获取指定城市的卫星图像，并将其保存为地图瓦片。瓦片将根据城市名称组织在子目录中。
+The script will procure satellite imagery of the specified cities and save them as map tiles, organized into subdirectories named after each city.
 
-## 重要注意事项
+## Important Notes
 
-- 该脚本使用多线程来同时下载多个瓦片，这可能会对服务器产生负载。务必合理使用，避免对百度地图服务器造成过多请求。
+- The script uses multithreading to download multiple tiles concurrently, which may impose a load on the server. Use responsibly to avoid overwhelming the Baidu Maps servers with excessive requests.
 
-- 下载的瓦片保存在名为`tiles`的目录中，每个城市都有对应的子目录。
+- The downloaded tiles are stored in a directory named `tiles`, with separate subdirectories for each city.
 
-- 该脚本支持卫星图像和道路地图。您可以通过在脚本中修改`satellite`变量来切换图像类型。
+- The script supports both satellite and road map imagery. You can toggle between image types by modifying the `satellite` variable in the script.
 
-- 在下载瓦片之间，脚本会随机休眠一段时间，以减轻服务器负担。
+- To reduce server load, the script includes a random sleep interval between downloads.
 
-欢迎为该脚本贡献代码，或者根据您的需求进行适当的修改。祝您使用愉快！
+Contributions to the script are welcome, or you may adjust it according to your needs. Enjoy your use!
 
 ---
-*注：此项目和脚本仅供教育和个人使用。请确保遵守与任何互动的API的条款和条件。*
+*Note: This project and script are intended solely for educational and personal use. Ensure compliance with the terms and conditions of any interacted API.*
