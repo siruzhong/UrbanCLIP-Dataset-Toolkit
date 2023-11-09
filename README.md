@@ -64,4 +64,4 @@ Each module can be run independently by navigating to its respective directory a
 
 For any questions or issues, please open an issue on the repository, and we'll be glad to help.
 
-By providing a streamlined workflow from image collection to data integration, the UrbanCLIP Dataset project aims to empower researchers, data scientists, and urban planners with the tools needed to analyze and interpret the ever-changing landscape of urban environments.
+By providing a streamlined workflow from image collection to data integration, the UrbanInsight Dataset project aims to empower researchers, data scientists, and urban planners with the tools needed to analyze and interpret the ever-changing landscape of urban environments.
