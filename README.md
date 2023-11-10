@@ -1,6 +1,6 @@
-# UrbanInsight Dataset Toolkit
+# UrbanCLIP Dataset Toolkit
 
-Welcome to the UrbanInsight Dataset Toolkit, a comprehensive tool chain designed to facilitate the collection, processing, and integration of satellite imagery and associated metadata for urban analysis. This repository encompasses a full pipeline from data acquisition through potential data augmentation modules to the generation of descriptive captions, and the aggregation of key datasets such as Population, GDP, and Carbon Emissions with satellite imagery.
+Welcome to the UrbanCLIP Dataset Toolkit, a comprehensive tool chain designed to facilitate the collection, processing, and integration of satellite imagery and associated metadata for urban analysis. This repository encompasses a full pipeline from data acquisition through potential data augmentation modules to the generation of descriptive captions, and the aggregation of key datasets such as Population, GDP, and Carbon Emissions with satellite imagery.
 
 This project is structured into four key directories:
 + `crawl`: For satellite imagery acquisition.
@@ -66,4 +66,4 @@ Each module can be run independently by navigating to its respective directory a
 
 For any questions or issues, please open an issue on the repository, and we'll be glad to help.
 
-By providing a streamlined workflow from image collection to data integration, the UrbanInsight Dataset project aims to empower researchers, data scientists, and urban planners with the tools needed to analyze and interpret the ever-changing landscape of urban environments.
+By providing a streamlined workflow from image collection to data integration, the UrbanCLIP Dataset project aims to empower researchers, data scientists, and urban planners with the tools needed to analyze and interpret the ever-changing landscape of urban environments.
