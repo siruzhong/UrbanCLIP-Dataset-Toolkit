@@ -3,7 +3,7 @@ import requests
 from loguru import logger
 
 # Replace with your Baidu Map API key (ak)
-ak = 'ufbll2CzDR5izZXP3PTt9aWK5Owd4TtG'
+ak = 'Replace with your own Baidu ak'
 
 
 # Convert latitude and longitude to Baidu map coordinates
