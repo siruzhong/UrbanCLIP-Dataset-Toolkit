@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import requests
 from loguru import logger
@@ -55,7 +57,6 @@ def calculate_bottom_right_coord(top_left_coord, zoom_level):
 
     # Convert the bottom-right coordinates back to latitude and longitude
     bottom_right_latitude, bottom_right_longitude = bd_xy2latlng(zoom_level, bottom_right_x, bottom_right_y)
-    logger.info(f'bottom_right_latitude: {bottom_right_latitude}, bottom_right_longitude: {bottom_right_longitude}')
 
     return bottom_right_latitude, bottom_right_longitude
 
@@ -72,33 +73,47 @@ def calculate_and_add_bottom_right(row):
 update_threshold = 10  # Update the CSV file every 10 rows
 
 if __name__ == '__main__':
-    # Load the CSV file into a pandas DataFrame
-    df = pd.read_csv('integrated_satellite_data.csv')
+    # Check if the temporary CSV file already exists
+    if os.path.isfile('temp_integrated_satellite_data.csv'):
+        logger.info("Temporary CSV file already exists. Checking for processed rows...")
+        # Load the temporary CSV file into a pandas DataFrame
+        temp_df = pd.read_csv('temp_integrated_satellite_data.csv')
+        processed_indices = set(temp_df.index)
 
-    # Create an empty list to store processed data rows
-    processed_rows = []
+        # Load the original CSV file into a pandas DataFrame
+        df = pd.read_csv('integrated_satellite_data.csv')
 
-    # Loop through each row and apply the function
-    for index, row in df.iterrows():
-        bottom_right_coord = calculate_and_add_bottom_right(row)
-        processed_rows.append(row)  # Append the original row
-        processed_rows[-1][
-            'Bottom Right Coordinate'] = bottom_right_coord  # Update the 'Bottom Right Coordinate' column
+        # Create an empty list to store processed data rows
+        processed_rows = []
 
-        # Check if the threshold is reached and update the CSV file
-        if (index + 1) % update_threshold == 0:
-            # Create a new DataFrame with processed rows
-            updated_df = pd.DataFrame(processed_rows)
+        # Loop through each row and apply the function
+        for index, row in df.iterrows():
+            if index in processed_indices:
+                # Skip rows that have already been processed
+                processed_rows.append(row)
+                continue
 
-            # Save the new DataFrame to a temporary CSV file
-            updated_df.to_csv('temp_integrated_satellite_data.csv', index=False)
+            bottom_right_coord = calculate_and_add_bottom_right(row)
+            processed_rows.append(row)  # Append the original row
+            processed_rows[-1][
+                'Bottom Right Coordinate'] = bottom_right_coord  # Update the 'Bottom Right Coordinate' column
 
-            logger.info(f"Processed {index + 1} rows. Updating CSV file...")
+            # Check if the threshold is reached and update the CSV file
+            if (index + 1) % update_threshold == 0:
+                # Create a new DataFrame with processed rows
+                updated_df = pd.DataFrame(processed_rows)
 
-    # After processing all rows, create a final DataFrame with processed rows
-    updated_df = pd.DataFrame(processed_rows)
+                # Save the new DataFrame to a temporary CSV file
+                updated_df.to_csv('temp_integrated_satellite_data.csv', index=False)
 
-    # Save the final DataFrame to the CSV file
-    updated_df.to_csv('integrated_satellite_data_with_bottom_right.csv', index=False)
+                logger.info(f"Processed {index + 1} rows. Updating CSV file...")
 
-    logger.info("CSV file updated with Bottom Right Coordinate.")
+        # After processing all rows, create a final DataFrame with processed rows
+        updated_df = pd.DataFrame(processed_rows)
+
+        # Save the final DataFrame to the CSV file
+        updated_df.to_csv('integrated_satellite_data_with_bottom_right.csv', index=False)
+
+        logger.info("CSV file updated with Bottom Right Coordinate.")
+    else:
+        logger.info("Temporary CSV file does not exist. Processing all rows.")
