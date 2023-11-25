@@ -52,7 +52,7 @@ shortened table:
 6. **Run the Script**  
    Execute the script to start retrieving satellite images:
    ```shell
-   python img-crawl.py
+   python img-img-crawl.py
    ```
 
 The table below outlines the approximate scales associated with different zoom levels, enabling you to fine-tune the
