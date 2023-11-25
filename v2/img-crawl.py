@@ -1,4 +1,5 @@
 import csv
+import math
 import os
 import random
 import time
@@ -8,6 +9,7 @@ import requests
 from PIL import Image
 from PIL import ImageDraw
 from loguru import logger
+from shapely import Polygon
 from shapely.geometry import box
 from shapely.wkt import loads
 
@@ -46,6 +48,21 @@ def bd_latlng2xy(zoom, latitude, longitude):
     x = loc['x'] / res
     y = loc['y'] / res
     return x, y
+
+
+# 高德坐标转百度（传入经度、纬度）
+def convert_gd_to_baidu(gg_lng, gg_lat):
+    X_PI = math.pi * 3000.0 / 180.0
+    x = gg_lng
+    y = gg_lat
+    z = math.sqrt(x * x + y * y) + 0.00002 * math.sin(y * X_PI)
+    theta = math.atan2(y, x) + 0.000003 * math.cos(x * X_PI)
+    bd_lng = z * math.cos(theta) + 0.0065
+    bd_lat = z * math.sin(theta) + 0.006
+    return {
+        "bd_lat": bd_lat,
+        "bd_lng": bd_lng
+    }
 
 
 # Download map tiles
@@ -118,12 +135,23 @@ def parse_aoi_file(file_path):
     with open(file_path, newline='', encoding='utf-8') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            polygon = loads(row['wkt'])
+            wkt = row['wkt']
+            # 转换WKT中的坐标点
+            polygon = loads(wkt)
+            converted_polygon = []
+            for point in polygon.exterior.coords:
+                lat, lon = point[1], point[0]
+                conversion_result = convert_gd_to_baidu(lon, lat)
+                converted_lat = conversion_result["bd_lat"]
+                converted_lon = conversion_result["bd_lng"]
+                converted_polygon.append((converted_lon, converted_lat))
+            # 创建转换后的多边形
+            converted_polygon = Polygon(converted_polygon)
             aoi = {
                 'address': row['aoi_address'],
                 'centroid': row['centroid'],
-                'polygon': polygon,
-                'bounding_square': get_bounding_square(polygon)
+                'polygon': converted_polygon,
+                'bounding_square': get_bounding_square(converted_polygon)
             }
             aois.append(aoi)
     return aois
