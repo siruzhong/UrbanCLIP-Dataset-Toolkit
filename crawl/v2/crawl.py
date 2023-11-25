@@ -5,13 +5,14 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
+from PIL import Image
 from loguru import logger
 from shapely.geometry import box
 from shapely.wkt import loads
 
 # Access key for Baidu Maps
 # Configuration viewable at: https://lbsyun.baidu.com/apiconsole/center#/home
-ak = 'Replace with your own Baidu ak'
+ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
 
 
 def preprocess(file_path):
@@ -59,25 +60,26 @@ def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, l
     # Calculate tile range
     start_x = int(start_x // 256)
     start_y = int(start_y // 256)
-    stop_x = int(stop_x // 256)
-    stop_y = int(stop_y // 256)
-
-    if start_x >= stop_x or start_y >= stop_y:
-        logger.info("Invalid coordinates range")
-        return
+    stop_x = int(stop_x // 256) + 1  # Make sure it is at least 1 greater than start_x
+    stop_y = int(stop_y // 256) + 1  # Make sure it is at least 1 greater than start_y
 
     logger.info(f'x range: {start_x} to {stop_x}')
     logger.info(f'y range: {start_y} to {stop_y}')
 
     # Loop to download each tile, using a thread pool of custom size, e.g., max_workers=666
+    tile_paths = []
     with ThreadPoolExecutor(max_workers=666) as executor:
         futures = []
         for x in range(start_x, stop_x):
             for y in range(start_y, stop_y):
+                tile_path = os.path.join(root_save, f"{zoom}_{x}_{y}_s.jpg")
+                tile_paths.append(tile_path)
                 futures.append(executor.submit(download_tile, x, y, zoom, satellite, root_save))
         # Wait for all threads to complete
         for future in futures:
             future.result()
+
+    return tile_paths, (stop_x - start_x, stop_y - start_y)
 
 
 # Download an individual map tile
@@ -134,6 +136,32 @@ def get_bounding_square(polygon):
     return box(minx, miny, minx + delta, miny + delta)
 
 
+def stitch_tiles(tile_paths, grid_size):
+    if not tile_paths:
+        logger.info("No tiles to stitch")
+        return
+
+    tile_width, tile_height = Image.open(tile_paths[0]).size
+    total_width = tile_width * grid_size[0]
+    total_height = tile_height * grid_size[1]
+    stitched_image = Image.new('RGB', (total_width, total_height))
+
+    # 根据文件名中的x和y坐标对瓦片路径进行排序
+    # 首先提取 x 和 y 的值，然后按 y 升序、x 升序排列
+    tile_paths.sort(key=lambda path: (int(path.split('_')[2]), int(path.split('_')[1])))
+
+    for i, tile_path in enumerate(tile_paths):
+        with Image.open(tile_path) as tile:
+            # 计算瓦片在拼接图像中的位置
+            x_index = i % grid_size[0]
+            y_index = i // grid_size[0]
+            x = x_index * tile_width
+            y = (grid_size[1] - 1 - y_index) * tile_height  # 从底部开始计算 y 坐标
+            stitched_image.paste(tile, (x, y))
+
+    return stitched_image
+
+
 def main():
     preprocess('aoi.csv')
     aois = parse_aoi_file('aoi.csv')
@@ -142,8 +170,16 @@ def main():
 
     for aoi in aois:
         square = aoi['bounding_square']
-        lat_start, lon_start, lat_stop, lon_stop = square.bounds
-        download_tiles(aoi['address'], zoom, lat_start, lat_stop, lon_start, lon_stop, satellite)
+        lon_start, lat_start, lon_stop, lat_stop = square.bounds
+        tile_paths, grid_size = download_tiles(aoi['address'], zoom, lat_start, lat_stop, lon_start, lon_stop,
+                                               satellite)
+        # Stitch tiles and save the stitched image
+        stitched_image = stitch_tiles(tile_paths, grid_size)
+        if stitched_image:
+            save_path = os.path.join("stitched_images", f"{aoi['address']}.jpg")
+            os.makedirs(os.path.dirname(save_path), exist_ok=True)
+            stitched_image.save(save_path)
+            logger.info(f"Stitched image saved to {save_path}")
 
 
 if __name__ == "__main__":
