@@ -228,22 +228,8 @@ def main():
             stitched_image.save(stitched_sava_path)
             logger.info(f"Stitched image saved to {stitched_sava_path}")
 
-            # # Calculate the adjusted tile bounds
-            # if grid_size[0] > 1:
-            #     tile_lon_delta = (lon_stop - lon_start) / (grid_size[0] - 1)
-            #     adjusted_lon_stop = lon_start + tile_lon_delta * grid_size[0]
-            # else:
-            #     adjusted_lon_stop = lon_stop  # 没有额外的瓦片，保持原始的stop坐标
-            #
-            # if grid_size[1] > 1:
-            #     tile_lat_delta = (lat_stop - lat_start) / (grid_size[1] - 1)
-            #     adjusted_lat_stop = lat_start + tile_lat_delta * grid_size[1]
-            # else:
-            #     adjusted_lat_stop = lat_stop  # 没有额外的瓦片，保持原始的stop坐标
-
             # Apply the mask based on AOI polygon and save the final image
             tile_bounds = (lon_start, lat_start, lon_stop, lat_stop)
-            # tile_bounds = (lon_start, lat_start, adjusted_lon_stop, adjusted_lat_stop)
             masked_sava_path = os.path.join("img/masked_images", f"{aoi['address']}.jpg")
             os.makedirs(os.path.dirname(masked_sava_path), exist_ok=True)
             apply_mask(stitched_image, aoi['polygon'], tile_bounds, masked_sava_path)
