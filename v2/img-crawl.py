@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from PIL import Image
+from PIL import ImageDraw
 from loguru import logger
 from shapely.geometry import box
 from shapely.wkt import loads
@@ -50,7 +51,7 @@ def bd_latlng2xy(zoom, latitude, longitude):
 # Download map tiles
 def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, longitude_stop, satellite=True):
     # Create a save directory with a separate subdirectory for each city
-    root_save = os.path.join("tiles", city)
+    root_save = os.path.join("img/tiles", city)
     os.makedirs(root_save, exist_ok=True)
 
     # Perform coordinate conversion
@@ -162,6 +163,27 @@ def stitch_tiles(tile_paths, grid_size):
     return stitched_image
 
 
+def apply_mask(stitched_image, aoi_polygon, tile_bounds, save_path):
+    # 将AOI多边形的地理坐标转换为图像上的像素坐标
+    def convert_coords(coords):
+        min_lon, min_lat, max_lon, max_lat = tile_bounds
+        x_percent = (coords[0] - min_lon) / (max_lon - min_lon)
+        y_percent = (max_lat - coords[1]) / (max_lat - min_lat)
+        return (x_percent * stitched_image.width, y_percent * stitched_image.height)
+
+    aoi_coords = [convert_coords(point) for point in aoi_polygon.exterior.coords]
+
+    # 创建一个遮罩层，用黑色填充多边形外的区域
+    mask = Image.new('L', stitched_image.size, 0)
+    draw = ImageDraw.Draw(mask)
+    # 多边形内部设置为白色（255），表示不进行遮罩处理
+    draw.polygon(aoi_coords, fill=255)
+    black_background = Image.new('RGB', stitched_image.size)
+    # 应用遮罩，多边形外的部分会变为黑色
+    masked_image = Image.composite(stitched_image, black_background, mask)
+    masked_image.save(save_path)
+
+
 def main():
     preprocess('aoi.csv')
     aois = parse_aoi_file('aoi.csv')
@@ -176,10 +198,16 @@ def main():
         # Stitch tiles and save the stitched image
         stitched_image = stitch_tiles(tile_paths, grid_size)
         if stitched_image:
-            save_path = os.path.join("stitched_images", f"{aoi['address']}.jpg")
-            os.makedirs(os.path.dirname(save_path), exist_ok=True)
-            stitched_image.save(save_path)
-            logger.info(f"Stitched image saved to {save_path}")
+            stitched_sava_path = os.path.join("img/stitched_images", f"{aoi['address']}.jpg")
+            os.makedirs(os.path.dirname(stitched_sava_path), exist_ok=True)
+            stitched_image.save(stitched_sava_path)
+            logger.info(f"Stitched image saved to {stitched_sava_path}")
+            # Apply the mask based on AOI polygon and save the final image
+            tile_bounds = (lon_start, lat_start, lon_stop, lat_stop)
+            masked_sava_path = os.path.join("img/masked_images", f"{aoi['address']}.jpg")
+            os.makedirs(os.path.dirname(masked_sava_path), exist_ok=True)
+            apply_mask(stitched_image, aoi['polygon'], tile_bounds, masked_sava_path)
+            logger.info(f"Masked image saved to {masked_sava_path}")
 
 
 if __name__ == "__main__":
