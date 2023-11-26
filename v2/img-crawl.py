@@ -42,12 +42,29 @@ def bd_latlng2xy(zoom, latitude, longitude):
     }
     response = requests.get(url=url, params=params)
     result = response.json()
-    logger.info(f'result: {result}')
     loc = result["result"][0]
     res = 2 ** (18 - zoom)  # Calculate the scaling factor
     x = loc['x'] / res
     y = loc['y'] / res
     return x, y
+
+
+def bd_xy2latlng(zoom, x, y):
+    """Convert BD09 pixel coordinates to WGS84 lat/lng for a given zoom level."""
+    res = 2 ** (18 - zoom)
+    bd_x = x * 256 * res
+    bd_y = y * 256 * res
+
+    params = {
+        "coords": f"{bd_y},{bd_x}",
+        "from": "6",  # BD09
+        "to": "5",  # WGS84
+        "ak": ak
+    }
+    response = requests.get(url="https://api.map.baidu.com/geoconv/v1/", params=params)
+    response.raise_for_status()  # Raise an exception for HTTP errors
+    loc = response.json()["result"][0]
+    return loc['y'], loc['x']  # latitude, longitude
 
 
 # 高德坐标转百度（传入经度、纬度）
@@ -81,6 +98,9 @@ def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, l
     stop_x = int(stop_x // 256) + 1  # Make sure it is at least 1 greater than start_x
     stop_y = int(stop_y // 256) + 1  # Make sure it is at least 1 greater than start_y
 
+    # 计算网格尺寸
+    grid_size_x = stop_x - start_x
+    grid_size_y = stop_y - start_y
     logger.info(f'x range: {start_x} to {stop_x}')
     logger.info(f'y range: {start_y} to {stop_y}')
 
@@ -97,7 +117,8 @@ def download_tiles(city, zoom, latitude_start, latitude_stop, longitude_start, l
         for future in futures:
             future.result()
 
-    return tile_paths, (stop_x - start_x, stop_y - start_y)
+    # Return tile paths, top-left tile coordinates, and grid size
+    return tile_paths, (start_x, stop_y), (grid_size_x, grid_size_y)
 
 
 # Download an individual map tile
@@ -196,33 +217,88 @@ def apply_mask(stitched_image, aoi_polygon, tile_bounds, save_path):
         y_percent = (max_lat - coords[1]) / (max_lat - min_lat)
         return (x_percent * stitched_image.width, y_percent * stitched_image.height)
 
+    # 确定AOI多边形在拼接图像上的像素坐标
     aoi_coords = [convert_coords(point) for point in aoi_polygon.exterior.coords]
 
-    # 创建一个遮罩层，用黑色填充多边形外的区域
-    mask = Image.new('L', stitched_image.size, 0)
+    # 获取AOI多边形的像素边界
+    aoi_pixel_bounds = [(min(x[0] for x in aoi_coords), min(y[1] for y in aoi_coords)),
+                        (max(x[0] for x in aoi_coords), max(y[1] for y in aoi_coords))]
+
+    # 裁剪拼接图像以获取AOI覆盖的矩形区域
+    crop_box = (aoi_pixel_bounds[0][0], aoi_pixel_bounds[0][1],
+                aoi_pixel_bounds[1][0], aoi_pixel_bounds[1][1])
+    logger.info(f"Cropping with box: {crop_box}")
+    aoi_image = stitched_image.crop(crop_box)
+
+    # 在AOI覆盖的矩形图像上创建遮罩
+    mask = Image.new('L', aoi_image.size, 0)
     draw = ImageDraw.Draw(mask)
-    # 多边形内部设置为白色（255），表示不进行遮罩处理
-    draw.polygon(aoi_coords, fill=255)
-    black_background = Image.new('RGB', stitched_image.size)
-    # 应用遮罩，多边形外的部分会变为黑色
-    masked_image = Image.composite(stitched_image, black_background, mask)
-    masked_image.save(save_path)
+    # 转换AOI坐标为相对于矩形图像的坐标
+    relative_aoi_coords = [(x[0] - aoi_pixel_bounds[0][0], x[1] - aoi_pixel_bounds[0][1]) for x in aoi_coords]
+    # 在遮罩上绘制多边形
+    draw.polygon(relative_aoi_coords, fill=255)
+    black_background = Image.new('RGB', aoi_image.size)
+    # 应用遮罩
+    masked_aoi_image = Image.composite(aoi_image, black_background, mask)
+    # 保存遮罩后的AOI图像
+    masked_aoi_image.save(save_path)
+
+    logger.info(f"Masked image saved to {save_path}")
+
+
+def crop_stitched_image(stitched_image, start_lat, start_lon, stop_lat, stop_lon, zoom, top_left_x_tile,
+                        top_left_y_tile):
+    # Convert the start and stop coordinates to pixel coordinates
+    start_x, start_y = bd_latlng2xy(zoom, start_lat, start_lon)
+    stop_x, stop_y = bd_latlng2xy(zoom, stop_lat, stop_lon)
+
+    # Calculate the pixel coordinates of the start and stop points relative to the entire stitched image
+    start_x_rel = int(start_x - top_left_x_tile * 256)
+    start_y_rel = -int(start_y - top_left_y_tile * 256)
+    stop_x_rel = int(stop_x - top_left_x_tile * 256)
+    stop_y_rel = -int(stop_y - top_left_y_tile * 256)
+
+    # 确保裁剪区域坐标正确
+    left = min(start_x_rel, stop_x_rel)
+    upper = min(start_y_rel, stop_y_rel)
+    right = max(start_x_rel, stop_x_rel)
+    lower = max(start_y_rel, stop_y_rel)
+
+    # 确保坐标在图像范围内
+    left = max(0, left)
+    upper = max(0, upper)
+    right = min(stitched_image.width, right)
+    lower = min(stitched_image.height, lower)
+
+    # Crop the stitched image
+    crop_area = (left, upper, right, lower)
+    cropped_image = stitched_image.crop(crop_area)
+    return cropped_image
 
 
 def main():
     preprocess('aoi.csv')
     aois = parse_aoi_file('aoi.csv')
-    zoom = 16  # Coarse zoom level
+    zoom = 19  # Coarse zoom level
     satellite = True  # Satellite image
 
     for aoi in aois:
         square = aoi['bounding_square']
         lon_start, lat_start, lon_stop, lat_stop = square.bounds
-        tile_paths, grid_size = download_tiles(aoi['address'], zoom, lat_start, lat_stop, lon_start, lon_stop, satellite)
+        tile_paths, (top_left_x_tile, top_left_y_tile), grid_size = \
+            download_tiles(aoi['address'], zoom, lat_start, lat_stop, lon_start, lon_stop, satellite)
 
         # Stitch tiles and save the stitched image
         stitched_image = stitch_tiles(tile_paths, grid_size)
         if stitched_image:
+            # Crop the stitched image based on the original coordinates
+            cropped_image = crop_stitched_image(
+                stitched_image, lat_start, lon_start, lat_stop, lon_stop, zoom, top_left_x_tile, top_left_y_tile)
+            cropped_save_path = os.path.join("img/cropped_images", f"{aoi['address']}.jpg")
+            os.makedirs(os.path.dirname(cropped_save_path), exist_ok=True)
+            cropped_image.save(cropped_save_path)
+            logger.info(f"Cropped image saved to {cropped_save_path}")
+
             stitched_sava_path = os.path.join("img/stitched_images", f"{aoi['address']}.jpg")
             os.makedirs(os.path.dirname(stitched_sava_path), exist_ok=True)
             stitched_image.save(stitched_sava_path)
@@ -232,7 +308,7 @@ def main():
             tile_bounds = (lon_start, lat_start, lon_stop, lat_stop)
             masked_sava_path = os.path.join("img/masked_images", f"{aoi['address']}.jpg")
             os.makedirs(os.path.dirname(masked_sava_path), exist_ok=True)
-            apply_mask(stitched_image, aoi['polygon'], tile_bounds, masked_sava_path)
+            apply_mask(cropped_image, aoi['polygon'], tile_bounds, masked_sava_path)
             logger.info(f"Masked image saved to {masked_sava_path}")
 
 
