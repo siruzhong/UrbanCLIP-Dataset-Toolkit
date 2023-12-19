@@ -3,7 +3,7 @@ import requests
 from loguru import logger
 
 # Replace with your Baidu Map API key (ak)
-ak = 'Replace with your own Baidu ak'
+ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
 
 
 # Convert latitude and longitude to Baidu map coordinates
@@ -51,7 +51,7 @@ def calculate_bottom_right_coord(top_left_coord, zoom_level):
 
     # Calculate the bottom-right corner coordinates in Baidu map coordinates
     bottom_right_x = top_left_x + 2
-    bottom_right_y = top_left_y - 1
+    bottom_right_y = top_left_y + 2
 
     # Convert the bottom-right coordinates back to latitude and longitude
     bottom_right_latitude, bottom_right_longitude = bd_xy2latlng(zoom_level, bottom_right_x, bottom_right_y)
