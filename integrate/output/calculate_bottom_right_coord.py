@@ -6,26 +6,8 @@ from loguru import logger
 ak = '1ZtwxRT5sUDd6jaj0c7sCpjy9zXTl10O'
 
 
-# Convert latitude and longitude to Baidu map coordinates
-def bd_latlng2xy(zoom, latitude, longitude):
-    url = "https://api.map.baidu.com/geoconv/v1/"
-    params = {
-        "coords": str(longitude) + ',' + str(latitude),
-        "from": "5",
-        "to": "6",
-        "ak": ak,
-    }
-    response = requests.get(url=url, params=params)
-    result = response.json()
-    loc = result["result"][0]
-    res = 2 ** (18 - zoom)  # Calculate the scaling factor
-    x = loc['x'] / res
-    y = loc['y'] / res
-    return x, y
-
-
+# Convert Baidu map coordinates to latitude and longitude
 def bd_xy2latlng(zoom, x, y):
-    """Convert BD09 pixel coordinates to WGS84 lat/lng for a given zoom level."""
     res = 2 ** (18 - zoom)
     bd_x = x * 256 * res
     bd_y = y * 256 * res
@@ -42,29 +24,12 @@ def bd_xy2latlng(zoom, x, y):
     return loc['y'], loc['x']  # latitude, longitude
 
 
-def calculate_bottom_right_coord(top_left_coord, zoom_level):
-    top_left_x, top_left_y = bd_latlng2xy(zoom_level, top_left_coord[0], top_left_coord[1])
-
-    # Calculate tile range
-    top_left_x = int(top_left_x // 256)
-    top_left_y = int(top_left_y // 256)
-
-    # Calculate the bottom-right corner coordinates in Baidu map coordinates
-    bottom_right_x = top_left_x + 2
-    bottom_right_y = top_left_y + 2
-
-    # Convert the bottom-right coordinates back to latitude and longitude
-    bottom_right_latitude, bottom_right_longitude = bd_xy2latlng(zoom_level, bottom_right_x, bottom_right_y)
-
-    return bottom_right_latitude, bottom_right_longitude
-
-
-# Function to calculate bottom-right coordinates and add them to the DataFrame
-def calculate_and_add_bottom_right(row):
-    top_left_coord = tuple(map(float, row['WGS84 coordinate'][1:-1].split(', ')))  # Convert to tuple
+# Function to calculate upper-right coordinates and add them to the DataFrame
+def calculate_and_add_upper_right(row):
+    lower_left_bd09_coord = tuple(map(int, row['BD09 coordinate'][1:-1].split(',')))  # Convert to tuple
+    upper_right_bd09_coord = lower_left_bd09_coord[0] + 1, lower_left_bd09_coord[1] + 1
     zoom_level = 16  # Zoom level 16
-    bottom_right_coord = calculate_bottom_right_coord(top_left_coord, zoom_level)
-    return bottom_right_coord
+    return bd_xy2latlng(zoom_level, upper_right_bd09_coord[0], upper_right_bd09_coord[1])
 
 
 # Define a threshold for updating the CSV file
@@ -86,14 +51,12 @@ if __name__ == '__main__':
     for index, row in df.iterrows():
         # Check if the temporary DataFrame exists and if the current satellite_img_name is in temp_df
         if not temp_df.empty and row['satellite_img_name'] in temp_df['satellite_img_name'].values:
-            logger.info(
-                f"Row {index} with satellite_img_name '{row['satellite_img_name']}' already processed in temp file. Skipping...")
+            logger.info(f"Row {index} with satellite_img_name '{row['satellite_img_name']}' already processed in temp file. Skipping...")
             continue
 
-        bottom_right_coord = calculate_and_add_bottom_right(row)
+        upper_right_coord = calculate_and_add_upper_right(row)
         processed_rows.append(row)  # Append the original row
-        processed_rows[-1][
-            'Bottom Right Coordinate'] = bottom_right_coord  # Update the 'Bottom Right Coordinate' column
+        processed_rows[-1]['Upper-Right WGS84 Coordinate'] = upper_right_coord  # Update 'Upper-Right WGS84 Coordinate' column
 
         # Check if the threshold is reached and update the CSV file
         if (index + 1) % update_threshold == 0:
@@ -114,4 +77,4 @@ if __name__ == '__main__':
 
             logger.info(f"Processed {index + 1} rows. Updating CSV file...")
 
-    logger.info("CSV file updated with Bottom Right Coordinate.")
+    logger.info("CSV file updated with Upper Right Coordinate.")
