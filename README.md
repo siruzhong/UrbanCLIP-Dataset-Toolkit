@@ -17,13 +17,12 @@ The work presented in this repository is in conjunction with the research findin
 If you utilize this dataset, codebase, or methodology in your work, please cite our paper as follows:
 
 ```
-@misc{yan2023urban,
-      title={When Urban Region Profiling Meets Large Language Models}, 
-      author={Yibo Yan and Haomin Wen and Siru Zhong and Wei Chen and Haodong Chen and Qingsong Wen and Roger Zimmermann and Yuxuan Liang},
-      year={2023},
-      eprint={2310.18340},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL}
+@inproceedings{yan2024urbanclip,
+  title={Urbanclip: Learning text-enhanced urban region profiling with contrastive language-image pretraining from the web},
+  author={Yan, Yibo and Wen, Haomin and Zhong, Siru and Chen, Wei and Chen, Haodong and Wen, Qingsong and Zimmermann, Roger and Liang, Yuxuan},
+  booktitle={Proceedings of the ACM on Web Conference 2024},
+  pages={4006--4017},
+  year={2024}
 }
 ```
 
